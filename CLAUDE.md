@@ -2,7 +2,7 @@
 
 ## Worum es geht
 
-Eine Lern-Web-App für juristische Prüfungsschemata (zunächst Europarecht). Sie wird über GitHub Pages veröffentlicht und dient zwei Zwecken: als persönliches Lernwerkzeug für die Examensvorbereitung (Erstes Staatsexamen NRW, Schwerpunkt Europarecht, Studium an der FernUniversität in Hagen) und als Zusatzangebot für die Zuschauer des YouTube-Kanals „Examensvorbereitung Öffentliches Recht“.
+Eine Lern-Web-App für juristische Prüfungsschemata (zunächst Europarecht). Sie wird über GitHub Pages veröffentlicht (Repository `Asadhutgu/schema-trainer`, Branch `main`, Ordner `/`; live unter https://asadhutgu.github.io/schema-trainer/) und dient zwei Zwecken: als persönliches Lernwerkzeug für die Examensvorbereitung (Erstes Staatsexamen NRW, Schwerpunkt Europarecht, Studium an der FernUniversität in Hagen) und als Zusatzangebot für die Zuschauer des YouTube-Kanals „Examensvorbereitung Öffentliches Recht“.
 
 Der Nutzer ist Jurist, kein Programmierer. Erkläre Änderungen deshalb kurz und in einfachem Deutsch, und kommuniziere auf Deutsch. Code-Kommentare ebenfalls auf Deutsch. Auf dem Rechner des Nutzers ist weder Node.js noch Python installiert; alles, was er selbst ausführen soll, muss im Browser laufen.
 
@@ -31,6 +31,8 @@ Der Lernstand liegt im `localStorage` unter dem Schlüssel `schematrainer:v1` im
 ## Arbeitsregeln
 
 Nach jeder Änderung an `schemata/` die Prüfung laufen lassen und Fehler beheben, bevor committet wird: in einer Umgebung mit Node.js `node tools/pruefen.mjs`, sonst `pruefen.html` im Browser öffnen. Beide verwenden dieselben Regeln aus `tools/pruefung.js`. Neue Schema-Dateien in `schemata/liste.js` eintragen.
+
+Veröffentlichen: Auf dem Rechner des Nutzers sind Git (`C:\Program Files\Git\cmd\git.exe`) und die GitHub-Befehlszeile `gh` (winget-Installation unter `%LOCALAPPDATA%\Microsoft\WinGet\Packages\GitHub.cli_…\bin\gh.exe`) installiert und bei GitHub als „Asadhutgu“ angemeldet; in Shell-Aufrufen beide ggf. über den vollen Pfad ansprechen, weil der PATH der Sitzung sie nicht enthält. Commit und `git push` auf `main` genügen, GitHub Pages baut automatisch. Wenn der Push wegen `.github/workflows/pruefen.yml` abgelehnt wird, fehlt dem gh-Token die Freigabe „workflow“ (`gh auth refresh -h github.com -s workflow`, Gerätecode durch den Nutzer bestätigen lassen).
 
 Juristische Inhalte nicht erfinden. Wenn bei einer Definition, Fundstelle oder Randnummer Unsicherheit besteht, die Stelle in der Antwort an den Nutzer ausdrücklich auflisten, statt sie stillschweigend zu übernehmen. Lieber eine Randnummer weglassen als eine falsche angeben.
 
