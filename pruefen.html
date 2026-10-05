@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schema-Dateien prüfen | Schema-Trainer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✓</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="band-inner">
+    <div class="badge" aria-hidden="true">E</div>
+    <div>
+      <h1>Schema-Dateien prüfen</h1>
+      <p>Schema-Trainer</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="intro">Diese Seite prüft die Schema-Dateien im Ordner <code>schemata</code> auf Form und Hausstil. Es muss nichts installiert werden. Nach jeder Änderung an einer Datei genügt es, diese Seite neu zu laden.</p>
+
+  <section id="status" class="status" aria-live="polite">
+    <p class="score">Prüfung läuft …</p>
+  </section>
+  <div class="actions">
+    <button class="btn primary" data-act="neu">Erneut prüfen</button>
+    <a class="btn" href="index.html">Zur App</a>
+  </div>
+
+  <section id="befunde" aria-label="Ergebnis je Datei"></section>
+
+  <section class="dropzone" id="dropzone">
+    <h3>Ordner prüfen</h3>
+    <p>Ziehe den Ordner <code>schemata</code> hierher oder wähle ihn aus. Dann wird zusätzlich geprüft, ob jede Datei im Ordner in der Liste eingetragen ist, und Fehler werden mit Zeilennummer angezeigt. Das geht auch mit einer einzelnen Datei.</p>
+    <label class="btn">Ordner auswählen<input id="ordner" type="file" webkitdirectory multiple hidden></label>
+  </section>
+
+  <details class="regeln">
+    <summary>Was geprüft wird</summary>
+    <ul>
+      <li>Jede in <code>schemata/liste.js</code> eingetragene Datei ist vorhanden und lässt sich lesen (keine fehlenden Klammern, Kommas oder Anführungszeichen).</li>
+      <li>Jede Datei enthält genau ein Schema mit den Feldern <code>id</code>, <code>norm</code>, <code>titel</code>, <code>gliederung</code> und <code>punkte</code>.</li>
+      <li>Die <code>id</code> ist eindeutig und besteht nur aus Kleinbuchstaben, Ziffern und Bindestrichen.</li>
+      <li>Die Gliederungszeichen sind bekannt (A., I., 1., a), aa)) und reichen für alle Ebenen.</li>
+      <li>Die Ebenen springen nicht: Jeder Punkt geht höchstens eine Ebene tiefer als der vorige.</li>
+      <li>Jede Definition hat Begriff, Text und Fundstelle; kein Begriff kommt im selben Schema doppelt vor.</li>
+      <li>Die Feldnamen sind richtig geschrieben (zum Beispiel „definition“, nicht „definiton“).</li>
+      <li>Hausstil: Absätze ausgeschrieben („Abs. 2“ statt „II“), die Grundrechtecharta heißt „GRCh“.</li>
+      <li>Beim Prüfen eines Ordners zusätzlich: Jede Datei im Ordner ist in <code>liste.js</code> eingetragen.</li>
+    </ul>
+  </details>
+</main>
+
+<footer>
+  <p>Dieselbe Prüfung läuft auf GitHub automatisch bei jeder Änderung (Reiter „Actions“).</p>
+</footer>
+
+<script src="tools/pruefung.js"></script>
+<script src="js/pruefen.js"></script>
+</body>
+</html>

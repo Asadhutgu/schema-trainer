@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schema-Trainer | Examensvorbereitung Öffentliches Recht</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="band">
+  <div class="band-inner">
+    <div class="badge" aria-hidden="true">E</div>
+    <div>
+      <h1>Schema-Trainer</h1>
+      <p>Examensvorbereitung Öffentliches Recht</p>
+    </div>
+  </div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<footer>
+  <p>Inhalte vor dem Auswendiglernen mit Skript und Rechtsprechung abgleichen.</p>
+  <button class="linkbtn" data-act="reset">Lernstand zurücksetzen</button>
+</footer>
+
+<!-- Die Schema-Dateien stehen in schemata/liste.js. js/app.js lädt sie von dort. -->
+<script>window.SCHEMATA = [];</script>
+<script src="schemata/liste.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
