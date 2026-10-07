@@ -1,6 +1,8 @@
 /*
   Schema-Trainer – Programmlogik
   Die Inhalte stehen in schemata/*.js (Format: docs/schema-format.md).
+  Eigene Schemata, die Nutzer in der App anlegen oder importieren, verwaltet js/eigene.js
+  (muss vor dieser Datei geladen sein); hier werden sie wie die mitgelieferten behandelt.
   Diese Datei enthält keine juristischen Inhalte.
 */
 /* ---------- Gliederung berechnen ---------- */
@@ -18,14 +20,23 @@ const NUM={
 function slug(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
 
 // Schema-Dateien (deutsche Feldnamen, gesammelt in window.SCHEMATA) in das interne Format überführen.
-// Wird aufgerufen, sobald alle Dateien aus schemata/liste.js geladen sind (siehe "Start" am Ende).
+// Wird aufgerufen, sobald alle Dateien aus schemata/liste.js geladen sind (siehe "Start" am Ende),
+// und erneut, wenn eigene Schemata gespeichert, importiert oder gelöscht werden (js/eigene.js).
+// Eigene Schemata kommen hinter die mitgelieferten; hat ein eigenes dieselbe id wie ein mitgeliefertes
+// (eigene Fassung), ersetzt es das mitgelieferte, und der Lernstand bleibt erhalten.
 // Formfehler in den Dateien meldet die Seite pruefen.html; hier wird nur abgefangen, was die App zum Absturz brächte.
 let SCHEMAS=[];
 function bereiteSchemataVor(){
-  SCHEMAS=(window.SCHEMATA||[])
-    .filter(r=>r&&typeof r==='object'&&r.id&&Array.isArray(r.punkte)&&Array.isArray(r.gliederung))
-    .map(r=>({
+  const brauchbar=r=>r&&typeof r==='object'&&r.id&&Array.isArray(r.punkte)&&Array.isArray(r.gliederung);
+  const eigene=(typeof Eigene!=='undefined'?Eigene.rohListe():[]).filter(brauchbar);
+  const eigeneIds=new Set(eigene.map(r=>r.id));
+  const mitgelieferte=(window.SCHEMATA||[]).filter(brauchbar);
+  const ersetzt=new Set(mitgelieferte.filter(r=>eigeneIds.has(r.id)).map(r=>r.id));
+  const roh=mitgelieferte.filter(r=>!eigeneIds.has(r.id)).map(r=>[r,false]).concat(eigene.map(r=>[r,true]));
+  SCHEMAS=roh
+    .map(([r,eigen])=>({
       id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', numbering:r.gliederung,
+      roh:r, eigen, ersetzt:eigen&&ersetzt.has(r.id),
       steps:r.punkte.filter(p=>p&&typeof p==='object').map(p=>({
         l:Number.isInteger(p.ebene)&&p.ebene>=0?p.ebene:0, t:String(p.punkt||''), ref:typeof p.verweis==='string'?p.verweis.trim():'',
         d:p.definition&&typeof p.definition==='object'?{term:String(p.definition.begriff||''),text:String(p.definition.text||''),src:String(p.definition.quelle||''),key:p.definition.id}:null
@@ -95,26 +106,33 @@ function gruppiert(){
     nachName.get(n).schemas.push(s);
   });
   const ohne=nachName.get('');
-  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name='Weitere Schemata';out.push(ohne);}
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
   return out;
 }
 function karte(s){
   const sc=store.scores[s.id], defs=s.steps.filter(x=>x.d).length;
-  return `<article class="schema">
-      <div class="norm">${esc(s.norm)}</div>
+  const z=Eigene.karteZusatz(s); // Kennzeichnung und Bearbeiten-Knopf für eigene Schemata
+  return `<article class="schema${s.eigen?' eigen':''}">
+      <div class="norm">${esc(s.norm)}${z.tag}</div>
       <h3>${esc(s.title)}</h3>
-      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}</div>
+      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}.${z.hinweis}</div>
       <div class="actions">
         <button class="btn primary" data-act="build" data-id="${s.id}">Aufbau abfragen</button>
         <button class="btn" data-act="order" data-id="${s.id}">Ordnen</button>
-        <button class="btn" data-act="cards" data-id="${s.id}">Definitionen</button>
+        <button class="btn" data-act="cards" data-id="${s.id}"${defs?'':' disabled'}>Definitionen</button>
         <button class="btn" data-act="view" data-id="${s.id}">Ansehen</button>
+        ${z.knopf}
       </div>
     </article>`;
 }
 function renderHome(){
-  state=null;
+  state=null; verlauf=[];
   const due=dueCount();
+  if(!SCHEMAS.length){
+    // Leere Umgebung (eigene.html ohne eigene Schemata): Einstieg statt leerer Liste
+    app.innerHTML=(ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:'')+Eigene.leerHinweis();
+    return;
+  }
   app.innerHTML=`
   ${ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:''}
   <p class="intro">Prüfungsschemata Schritt für Schritt aufbauen, Prüfungspunkte ordnen und Definitionen aktiv abrufen. Dein Lernstand wird in diesem Browser gespeichert.</p>
@@ -122,13 +140,14 @@ function renderHome(){
     <div><strong>${due}</strong>${due===1?'Definition':'Definitionen'} fällig oder neu</div>
     <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
   </section>
+  ${Eigene.werkzeuge()}
   ${gruppiert().map(g=>`${g.name?`<h2 class="gruppe">${esc(g.name)}</h2>`:''}${g.schemas.map(karte).join('')}`).join('')}`;
 }
 
 /* ---------- Ansehen ---------- */
 function renderView(s){
   state={kind:'view',s};
-  app.innerHTML=topbar(s)+`<ol class="outline" style="margin-top:1rem">${s.steps.map((st,i)=>row(st,{extra:verweisBtn(st,'view')+(st.d?` <button class="linkbtn" data-act="toggleDef" aria-expanded="false">Definition</button><div class="def" hidden>${defHtml(st.d)}</div>`:'')})).join('')}</ol>`;
+  app.innerHTML=topbar(s)+`<p class="ansicht-werkzeuge">${Eigene.ansichtLink(s)}</p><ol class="outline" style="margin-top:.6rem">${s.steps.map((st,i)=>row(st,{extra:verweisBtn(st,'view')+(st.d?` <button class="linkbtn" data-act="toggleDef" aria-expanded="false">Definition</button><div class="def" hidden>${defHtml(st.d)}</div>`:'')})).join('')}</ol>`;
 }
 
 /* ---------- Aufbau abfragen ---------- */
@@ -265,11 +284,13 @@ document.addEventListener('click',e=>{
       if(b.dataset.armed){store={cards:{},scores:{}};save();delete b.dataset.armed;b.textContent='Lernstand zurücksetzen';renderHome();}
       else{b.dataset.armed='1';b.textContent='Zum Bestätigen erneut tippen';}
       break;
+    default: Eigene.aktion(act,b); // Editor, Import, Export (js/eigene.js)
   }
 });
 document.addEventListener('keydown',e=>{
   if(!state||e.altKey) return;
-  const t=e.target, inText=t.tagName==='TEXTAREA', onBtn=t.tagName==='BUTTON';
+  if(state.kind==='edit'||state.kind==='import'||state.kind==='export') return; // Tastatur dort: js/eigene.js
+  const t=e.target, inText=t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.tagName==='SELECT', onBtn=t.tagName==='BUTTON';
   const press=sel=>{const b=app.querySelector(sel); if(b){e.preventDefault(); b.click();}};
   if(state.kind==='cards'&&!state.revealed&&inText&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){press('[data-act="flip"]');return;}
   if(inText||e.ctrlKey||e.metaKey) return;
@@ -293,7 +314,8 @@ function ladeSchemata(dateien){
     document.head.appendChild(s);
   })));
 }
-const dateien=Array.isArray(window.SCHEMA_DATEIEN)?window.SCHEMA_DATEIEN.filter(n=>typeof n==='string'):null;
+// eigene.html setzt window.NUR_EIGENE und bindet schemata/liste.js nicht ein: leere Umgebung nur mit eigenen Schemata
+const dateien=window.NUR_EIGENE?[]:(Array.isArray(window.SCHEMA_DATEIEN)?window.SCHEMA_DATEIEN.filter(n=>typeof n==='string'):null);
 if(!dateien){
   ladeHinweis='Die Liste der Schema-Dateien (schemata/liste.js) konnte nicht geladen werden.';
   bereiteSchemataVor(); renderHome();

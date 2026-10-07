@@ -1,5 +1,7 @@
 # Aufbau einer Schema-Datei
 
+Wer nur für sich Schemata anlegen will, braucht diese Anleitung nicht: Auf der Startseite der App führt „Neues Schema“ durch Aufbau und Definitionen, gespeichert wird im Browser, geteilt wird über „Exportieren“ und „Importieren“ (`docs/import-export.md`). Diese Anleitung beschreibt das Dateiformat der mitgelieferten Schemata im Ordner `schemata/`; dasselbe Format steckt in JSON-Schreibweise auch in den Export-Dateien.
+
 Jedes Prüfungsschema steht in einer eigenen Datei im Ordner `schemata/`, zum Beispiel `schemata/warenverkehrsfreiheit.js`. Damit das Schema in der App erscheint, muss der Dateiname zusätzlich in `schemata/liste.js` eingetragen sein. Die Reihenfolge dort ist die Reihenfolge auf der Startseite.
 
 ## Neues Schema anlegen, Schritt für Schritt
@@ -46,7 +48,7 @@ SCHEMATA.push({
 
 `punkte` ist die Gliederung von oben nach unten. `ebene: 0` ist die oberste Ebene. Ein Punkt darf immer nur eine Ebene tiefer gehen als der vorige (von 0 auf 1, nicht von 0 auf 2), zurück darf er beliebig weit springen.
 
-`definition` ist freiwillig. Jede Definition wird automatisch zu einer Karteikarte im Modus „Definitionen“. `begriff` ist die Vorderseite der Karte, `text` die Rückseite, `quelle` die Fundstelle. Der Lernstand einer Karte hängt am `begriff`: Wird ein Begriff umbenannt, beginnt die Karte von vorn. Soll das vermieden werden oder kommt derselbe Begriff in einem Schema zweimal vor, kann die Definition ein eigenes Feld `id` bekommen, das dann stabil bleibt.
+`definition` ist freiwillig. Jede Definition wird automatisch zu einer Karteikarte im Modus „Definitionen“. `begriff` ist die Vorderseite der Karte, `text` die Rückseite, `quelle` die Fundstelle. Für die Dateien in `schemata/` sind `norm` und `quelle` Pflicht; für Schemata, die Nutzer in der App anlegen oder importieren, sind beide freiwillig. Der Lernstand einer Karte hängt am `begriff`: Wird ein Begriff umbenannt, beginnt die Karte von vorn. Soll das vermieden werden oder kommt derselbe Begriff in einem Schema zweimal vor, kann die Definition ein eigenes Feld `id` bekommen, das dann stabil bleibt.
 
 `verweis` ist freiwillig und enthält die `id` eines anderen Schemas, zum Beispiel `verweis: "wvf"`. Der Punkt bekommt dann in der Ansicht einen Link „Schema … ansehen“ und im Modus „Aufbau abfragen“ einen Knopf „Schema … abfragen“. Wer ihn drückt, prüft das andere Schema durch und kommt mit „Zurück zu …“ genau an die Stelle zurück, an der er war. So lässt sich etwa im Vertragsverletzungsverfahren in der Begründetheit nach der betroffenen Grundfreiheit verzweigen, ohne die Grundfreiheiten doppelt zu pflegen. Ein Punkt darf Definition und Verweis zugleich haben. Die Prüfseite meldet Verweise auf unbekannte ids.
 

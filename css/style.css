@@ -168,3 +168,86 @@ a.btn,label.btn{display:inline-flex;align-items:center;justify-content:center;te
 .regeln summary{cursor:pointer;color:var(--heading);font-family:var(--serif);font-size:1.05rem;padding:.3rem 0;}
 .regeln ul{padding-left:1.2rem;margin:.5rem 0 0;}
 .regeln li{margin:.3rem 0;}
+
+/* ---------- Eigene Schemata: Werkzeugleiste, Editor, Import, Export (js/eigene.js) ---------- */
+.werkzeuge{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.5rem;}
+.werkzeuge-hinweis{color:var(--muted);font-size:.85rem;margin:0 0 1.25rem;}
+.werkzeuge-hinweis a,.leer a,.hinweisbox a{color:var(--gold-ink);}
+.werkzeuge-hinweis:empty{display:none;}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .45rem;border-radius:4px;background:var(--row);color:var(--gold-ink);vertical-align:middle;margin-left:.45rem;font-family:var(--sans);}
+.norm .tag{margin-left:.6rem;}
+.norm:empty{display:none;}
+.schema.eigen{border-left:4px solid var(--gold);}
+.leer{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:1.2rem 1.25rem 1.3rem;margin-bottom:1.5rem;}
+.leer h2{font-family:var(--serif);color:var(--heading);font-size:1.45rem;margin:0 0 .5rem;}
+.leer p{margin:0 0 .5rem;max-width:62ch;}
+.hinweisbox.ok{border-left-color:var(--ok);}
+.hinweisbox p{margin:0;}
+.ansicht-werkzeuge{margin:0;text-align:right;}
+
+/* Schritte 1 Aufbau, 2 Definitionen */
+.schritte{list-style:none;display:flex;gap:.5rem;padding:0;margin:.75rem 0 1.25rem;flex-wrap:wrap;}
+.schrittbtn{font:inherit;font-size:.9rem;min-height:44px;padding:.45rem .9rem;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:.5rem;}
+.schritte .aktiv .schrittbtn{border-color:var(--gold);color:var(--heading);font-weight:700;}
+.schrittbtn .sn{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--row);color:var(--gold-ink);font-family:var(--serif);font-weight:700;font-size:.85rem;}
+.schritte .aktiv .sn{background:var(--gold);color:#1F3A5F;}
+
+/* Knopfleiste, die nicht am unteren Rand haftet (Formulare) */
+.controls.flach{position:static;background:none;padding:1rem 0 0;}
+
+/* Formularfelder */
+.feld{margin-bottom:.9rem;}
+.feld label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:.3rem;}
+input[type="text"],select{width:100%;font:inherit;font-size:.95rem;min-height:44px;padding:.55rem .8rem;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);}
+select{appearance:auto;}
+input[type="text"]:focus-visible,select:focus-visible,input[type="checkbox"]:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+input[type="checkbox"]{width:1.25rem;height:1.25rem;accent-color:var(--gold);margin:0;flex:none;}
+
+/* Prüfungspunkte im Editor */
+.epunkte{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;}
+.epunkt{display:grid;grid-template-columns:minmax(2.4rem,auto) 1fr;gap:.4rem .6rem;align-items:center;padding:.6rem .75rem .6rem calc(.75rem + var(--lvl,0) * 1.35rem);border-top:1px solid var(--line);}
+.epunkt:first-child{border-top:0;}
+.epunkt .num{text-align:right;}
+.epunkt[data-l="0"] .ptext{font-family:var(--serif);font-weight:700;color:var(--heading);font-size:1.05rem;}
+.pwerkzeuge{grid-column:2;display:flex;gap:.3rem;flex-wrap:wrap;}
+.ibtn{font:inherit;font-size:1rem;min-width:44px;min-height:44px;padding:0;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--heading);cursor:pointer;}
+.ibtn:hover:not(:disabled){border-color:var(--gold);}
+.ibtn:disabled{opacity:.3;cursor:default;}
+.ibtn.weg:hover:not(:disabled){border-color:var(--bad);color:var(--bad);}
+@media (min-width:640px){
+  .epunkt{grid-template-columns:minmax(2.4rem,auto) 1fr auto;}
+  .pwerkzeuge{grid-column:auto;flex-wrap:nowrap;}
+}
+.mehrere{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;margin-top:.75rem;}
+.mehrere .actions{margin-top:.6rem;}
+.gefahr{text-align:right;margin:1rem 0 0;}
+.gefahr .linkbtn{color:var(--bad);}
+
+/* Definitionen im Editor */
+.edefs .txt .linkbtn{margin-left:.4rem;}
+.defeditor{background:var(--row);border-radius:8px;padding:.85rem .95rem .6rem;margin:.6rem 0 .2rem;font-family:var(--sans);font-weight:400;font-size:.95rem;color:var(--ink);}
+.step.current .defeditor{background:var(--surface);border:1px solid var(--line);}
+.defeditor .feld:last-of-type{margin-bottom:.6rem;}
+.defeditor .actions{margin-top:.5rem;}
+
+/* Befunde der Prüfung im Editor und beim Import */
+.befundbox{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;margin:1rem 0 0;overflow:hidden;}
+.befundbox.warn{border-left-color:var(--gold);}
+.befundbox .befundtitel{margin:0;padding:.7rem 1rem;font-weight:700;color:var(--bad);}
+.befundbox summary{cursor:pointer;padding:.7rem 1rem;color:var(--heading);font-weight:700;}
+.befundbox .befunde{border-top:1px solid var(--line);}
+
+/* Import und Export */
+.dropzone .dropsub{color:var(--muted);font-size:.9rem;margin-left:.75rem;}
+#importzone{margin:0 0 1rem;display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;}
+.datei-wahl{padding:0 1rem .75rem;}
+.datei-wahl:empty{display:none;}
+.wahl{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.95rem;min-height:44px;}
+.wahl select{width:auto;flex:1 1 14rem;}
+.wahl .info{color:var(--muted);font-weight:400;}
+.auswahl{list-style:none;margin:0 0 1rem;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;}
+.auswahl li{padding:.15rem 1rem;border-top:1px solid var(--line);}
+.auswahl li:first-child{border-top:0;}
+.auswahlbox{margin-bottom:1rem;}
+.auswahlbox summary{cursor:pointer;color:var(--heading);font-family:var(--serif);font-size:1.05rem;padding:.3rem 0 .6rem;}
+#x-text{font-family:Consolas,"Courier New",monospace;font-size:.82rem;}

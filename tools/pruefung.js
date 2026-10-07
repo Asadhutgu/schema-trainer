@@ -16,6 +16,11 @@
     quelle.vorhanden    Dateinamen, die tatsächlich im Ordner liegen (oder null)
     quelle.vollstaendig false, wenn nur einzelne Dateien übergeben wurden (fehlende dann nicht bemängeln)
     quelle.dateien      [{name, status: "ok" | "fehlt" | "fehler", fehler, schemata}]
+    quelle.weitereIds   ids von Schemata, die außerhalb der geprüften Dateien bekannt sind
+                        (z. B. die in der App geladenen), damit Verweise darauf nicht bemängelt werden
+    quelle.modus        "eigene" für Schemata, die Nutzer im Editor der App anlegen oder importieren:
+                        dann sind norm und quelle (Fundstelle) freiwillig und ihr Fehlen ist nur ein Hinweis.
+                        Für die Dateien im Ordner schemata/ bleibt beides Pflicht.
   Ausgabe: {befunde: [{art: "fehler" | "hinweis", datei, ort, text, tipp}], statistik}
 */
 (function (root) {
@@ -29,6 +34,9 @@
   };
   const PFLICHT_SCHEMA = ['id', 'norm', 'titel', 'gliederung', 'punkte'];
   const PFLICHT_DEFINITION = ['begriff', 'text', 'quelle'];
+  // Im Modus "eigene" (Editor und Import in der App) sind norm und quelle freiwillig
+  const PFLICHT_SCHEMA_EIGENE = ['id', 'titel', 'gliederung', 'punkte'];
+  const PFLICHT_DEFINITION_EIGENE = ['begriff', 'text'];
   const LISTE = 'liste.js';
   const DATEINAME = /^[A-Za-z0-9._-]+\.js$/;
 
@@ -110,6 +118,9 @@
     const hinweis = (datei, ort, text, tipp) => melde('hinweis', datei, ort, text, tipp);
     const LISTE_PFAD = 'schemata/' + LISTE;
     const dateien = Array.isArray(quelle.dateien) ? quelle.dateien : [];
+    const eigene = quelle.modus === 'eigene';
+    const pflichtSchema = eigene ? PFLICHT_SCHEMA_EIGENE : PFLICHT_SCHEMA;
+    const pflichtDefinition = eigene ? PFLICHT_DEFINITION_EIGENE : PFLICHT_DEFINITION;
 
     /* 1. Die Liste der Dateien (schemata/liste.js) */
     let liste = null;
@@ -180,6 +191,7 @@
     // Alle ids vorab sammeln, damit Verweise (Feld "verweis") geprüft werden können
     const alleIds = new Set();
     for (const { s } of geladen) if (istObjekt(s) && istText(s.id)) alleIds.add(s.id);
+    if (Array.isArray(quelle.weitereIds)) for (const id of quelle.weitereIds) if (istText(id)) alleIds.add(id);
 
     function pruefeFelder(vorhanden, erlaubt, datei, ort) {
       for (const f of vorhanden) {
@@ -193,8 +205,12 @@
     for (const { s, datei } of geladen) {
       if (!istObjekt(s)) { fehler(datei, '', 'SCHEMATA.push muss einen Eintrag in geschweiften Klammern { ... } erhalten.'); continue; }
       pruefeFelder(Object.keys(s), FELDER.schema, datei, 'Schema');
-      for (const feld of PFLICHT_SCHEMA) if (s[feld] === undefined) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ fehlt.', 'Pflichtfelder: id, norm, titel, gliederung, punkte.');
-      for (const feld of ['id', 'norm', 'titel', 'gruppe']) if (s[feld] !== undefined && !istText(s[feld])) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ muss ein Text in Anführungszeichen sein und darf nicht leer sein.');
+      for (const feld of pflichtSchema) if (s[feld] === undefined) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ fehlt.', 'Pflichtfelder: ' + pflichtSchema.join(', ') + '.');
+      if (eigene && !istText(s.norm)) hinweis(datei, 'Schema', 'Keine Norm angegeben.', 'Freiwillig. Die Norm erscheint in Gold über dem Titel, zum Beispiel „Art. 34 AEUV“ oder „§ 823 Abs. 1 BGB“.');
+      for (const feld of ['id', 'norm', 'titel', 'gruppe']) {
+        if (eigene && feld === 'norm' && (s[feld] === undefined || s[feld] === '')) continue;
+        if (s[feld] !== undefined && !istText(s[feld])) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ muss ein Text in Anführungszeichen sein und darf nicht leer sein.');
+      }
 
       if (istText(s.id)) {
         if (!/^[a-z0-9-]+$/.test(s.id)) fehler(datei, 'Schema', 'Die id „' + s.id + '“ darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten.', 'Umlaute, Leerzeichen und Großbuchstaben vermeiden, zum Beispiel "niederlassungsfreiheit".');
@@ -252,7 +268,11 @@
             statistik.definitionen++;
             const d = p.definition;
             pruefeFelder(Object.keys(d), FELDER.definition, datei, ort);
-            for (const feld of PFLICHT_DEFINITION) if (!istText(d[feld])) fehler(datei, ort, 'Die Definition hat kein Feld „' + feld + '“ oder es ist leer.', 'Jede Definition braucht begriff, text und quelle.');
+            for (const feld of pflichtDefinition) if (!istText(d[feld])) fehler(datei, ort, 'Die Definition hat kein Feld „' + feld + '“ oder es ist leer.', 'Jede Definition braucht ' + (eigene ? 'begriff und text.' : 'begriff, text und quelle.'));
+            if (eigene) {
+              if (d.quelle === undefined || d.quelle === '') hinweis(datei, ort, 'Die Definition hat keine Fundstelle.', 'Freiwillig, aber hilfreich: Gesetz, Urteil oder Lehrbuch, aus dem die Definition stammt.');
+              else if (!istText(d.quelle)) fehler(datei, ort, 'Das Feld „quelle“ der Definition muss ein Text in Anführungszeichen sein.');
+            }
             if (d.id !== undefined && !istText(d.id)) fehler(datei, ort, 'Das Feld „id“ der Definition muss ein nicht leerer Text sein.');
             const key = istText(d.id) ? d.id.trim() : (istText(d.begriff) ? slug(d.begriff) : '');
             if (key) {
@@ -286,5 +306,5 @@
     return { befunde, statistik };
   }
 
-  root.SchemaPruefung = { pruefen, GLIEDERUNG, LISTE, DATEINAME, slug };
+  root.SchemaPruefung = { pruefen, erklaere, GLIEDERUNG, LISTE, DATEINAME, slug };
 })(typeof window !== 'undefined' ? window : globalThis);
