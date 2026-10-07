@@ -64,7 +64,7 @@ async function szenario(browser, basis, name) {
   await page.click('[data-act="e-start"]');
   await page.waitForSelector('#e-titel');
   await page.fill('#e-titel', 'Verfassungsbeschwerde');
-  await page.fill('#e-norm', 'Art. 93 Abs. 1 Nr. 4a GG');
+  await page.fill('#e-norm', 'Art. 94 Abs. 1 Nr. 4a GG');
   await page.fill('#e-gruppe', 'Staatsrecht');
   await page.fill('.ptext[data-i="0"]', 'Zulässigkeit');
   await page.press('.ptext[data-i="0"]', 'Enter');

@@ -191,7 +191,7 @@ function renderEditor(){
   const gl=GLIEDERUNGEN.findIndex(g=>g.zeichen.join()===e.gliederung.join());
   app.innerHTML=kopfHtml(e)+`
   <div class="feld"><label for="e-titel">Titel</label><input type="text" id="e-titel" data-feld="titel" value="${esc(e.titel)}" placeholder="z. B. Verfassungsbeschwerde" autocomplete="off"></div>
-  <div class="feld"><label for="e-norm">Norm (freiwillig)</label><input type="text" id="e-norm" data-feld="norm" value="${esc(e.norm)}" placeholder="z. B. Art. 93 Abs. 1 Nr. 4a GG" autocomplete="off"></div>
+  <div class="feld"><label for="e-norm">Norm (freiwillig)</label><input type="text" id="e-norm" data-feld="norm" value="${esc(e.norm)}" placeholder="z. B. Art. 94 Abs. 1 Nr. 4a GG" autocomplete="off"></div>
   <div class="feld"><label for="e-gruppe">Gruppe auf der Startseite (freiwillig)</label><input type="text" id="e-gruppe" data-feld="gruppe" list="e-gruppen" value="${esc(e.gruppe)}" placeholder="z. B. Staatsrecht" autocomplete="off"><datalist id="e-gruppen">${gruppen.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div>
   <div class="feld"><label for="e-gliederung">Gliederungszeichen</label><select id="e-gliederung" data-feld="gliederung">${GLIEDERUNGEN.map((g,i)=>`<option value="${i}"${i===gl?' selected':''}>${esc(g.name)}</option>`).join('')}${gl<0?`<option value="-1" selected>${esc(e.gliederung.join(' – '))}</option>`:''}</select></div>
   <h3>Prüfungspunkte</h3>

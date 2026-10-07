@@ -44,7 +44,7 @@ Die Datei ist eine Textdatei im JSON-Format. Sie enthält dieselben Felder wie e
       "datei": "verfassungsbeschwerde.js",
       "herkunft": "Lerngruppe Hagen, Stand Oktober 2026",
       "id": "verfassungsbeschwerde",
-      "norm": "Art. 93 Abs. 1 Nr. 4a GG",
+      "norm": "Art. 94 Abs. 1 Nr. 4a GG",
       "titel": "Verfassungsbeschwerde",
       "gruppe": "Staatsrecht",
       "gliederung": ["A.", "I.", "1.", "a)"],
