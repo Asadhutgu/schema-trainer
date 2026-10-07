@@ -20,7 +20,8 @@ SCHEMATA.push({
   id: "kurzname",                 // nur Kleinbuchstaben, Ziffern, Bindestriche; nie mehr ändern
   norm: "Art. 49 AEUV",           // erscheint in Gold über dem Titel
   titel: "Niederlassungsfreiheit",
-  gruppe: "Grundfreiheiten",       // freiwillig: Zwischenüberschrift auf der Startseite
+  gebiet: "Europarecht",           // freiwillig: Rechtsgebiet, nach dem die Startseite filtert
+  gruppe: "Grundfreiheiten",       // freiwillig: Zwischenüberschrift innerhalb des Rechtsgebiets
   gliederung: ["I.", "1.", "a)"], // Gliederungszeichen je Ebene
   punkte: [
     { ebene: 0, punkt: "Schutzbereich" },
@@ -42,7 +43,9 @@ SCHEMATA.push({
 
 `id` ist der interne Kurzname des Schemas. Er steckt im gespeicherten Lernstand und darf deshalb nach der Veröffentlichung nicht mehr geändert werden.
 
-`gruppe` ist freiwillig. Schemata mit derselben `gruppe` stehen auf der Startseite unter einer gemeinsamen Zwischenüberschrift (zum Beispiel „Grundfreiheiten“ oder „Rechtsschutz vor den Unionsgerichten“). Die Reihenfolge der Gruppen folgt dem ersten Auftreten in `schemata/liste.js`; Schemata ohne `gruppe` stehen am Ende unter „Weitere Schemata“.
+`gebiet` ist freiwillig und nennt das Rechtsgebiet, zum Beispiel „Europarecht“ oder „Wirtschaftsstrafrecht“. Gibt es mindestens zwei Rechtsgebiete, zeigt die Startseite oben eine Auswahl („Alle Gebiete“, dann je Gebiet ein Knopf), und die Schemata stehen gebietsweise unter einer großen Überschrift. Die gewählte Ansicht merkt sich der Browser; auch die Zahl der fälligen Karten und „Wiederholen“ beziehen sich auf die gewählte Ansicht. Schemata ohne `gebiet` erscheinen in jeder Ansicht.
+
+`gruppe` ist freiwillig. Schemata mit derselben `gruppe` (innerhalb desselben Rechtsgebiets) stehen auf der Startseite unter einer gemeinsamen Zwischenüberschrift (zum Beispiel „Grundfreiheiten“ oder „Rechtsschutz vor den Unionsgerichten“). Die Reihenfolge der Gebiete und Gruppen folgt dem ersten Auftreten in `schemata/liste.js`; Schemata ohne `gruppe` stehen am Ende ihres Gebiets unter „Weitere Schemata“.
 
 `gliederung` legt fest, welches Gliederungszeichen auf welcher Ebene steht. Erlaubt sind `"A."`, `"I."`, `"1."`, `"a)"` und `"aa)"`. Ein Grundfreiheiten-Schema nutzt typischerweise `["I.", "1.", "a)"]`, ein Klageschema mit Zulässigkeit und Begründetheit `["A.", "I.", "1.", "a)"]`. Die Nummern selbst zählt die App automatisch.
 

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "rl-umsetzung",
   norm: "Art. 288 Abs. 3 AEUV",
   titel: "Fehlerhafte Richtlinienumsetzung – Prüfungsreihenfolge",
+  gebiet: "Europarecht",
   gruppe: "Grundlagen",
   gliederung: ["I.", "1."],
   punkte: [

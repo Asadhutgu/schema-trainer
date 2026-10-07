@@ -35,7 +35,7 @@ function bereiteSchemataVor(){
   const roh=mitgelieferte.filter(r=>!eigeneIds.has(r.id)).map(r=>[r,false]).concat(eigene.map(r=>[r,true]));
   SCHEMAS=roh
     .map(([r,eigen])=>({
-      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', numbering:r.gliederung,
+      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', gebiet:typeof r.gebiet==='string'?r.gebiet.trim():'', numbering:r.gliederung,
       roh:r, eigen, ersetzt:eigen&&ersetzt.has(r.id),
       steps:r.punkte.filter(p=>p&&typeof p==='object').map(p=>({
         l:Number.isInteger(p.ebene)&&p.ebene>=0?p.ebene:0, t:String(p.punkt||''), ref:typeof p.verweis==='string'?p.verweis.trim():'',
@@ -66,6 +66,19 @@ let store={cards:{},scores:{}};
 try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{}};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 function card(cid){return store.cards[cid]||{box:0,due:0};}
+// Ansicht: gewähltes Rechtsgebiet auf der Startseite (Feld "gebiet"); '' = alle
+const KEY_ANSICHT='schematrainer:ansicht:v1';
+let filterGebiet='';
+try{const a=JSON.parse(localStorage.getItem(KEY_ANSICHT)||'{}'); if(typeof a.gebiet==='string') filterGebiet=a.gebiet;}catch(e){}
+function merkeAnsicht(){try{localStorage.setItem(KEY_ANSICHT,JSON.stringify({gebiet:filterGebiet}));}catch(e){}}
+// Rechtsgebiete in Reihenfolge des ersten Auftretens; Filter nur sinnvoll, wenn es mindestens zwei gibt
+function gebiete(){const out=[];SCHEMAS.forEach(s=>{if(s.gebiet&&!out.includes(s.gebiet))out.push(s.gebiet);});return out;}
+// Schemata, die zur gewählten Ansicht gehören. Schemata ohne Rechtsgebiet erscheinen immer.
+function sichtbar(){
+  const g=gebiete();
+  if(!filterGebiet||g.length<2||!g.includes(filterGebiet)) return SCHEMAS;
+  return SCHEMAS.filter(s=>!s.gebiet||s.gebiet===filterGebiet);
+}
 
 /* ---------- Helfer ---------- */
 const app=document.getElementById('app');
@@ -93,14 +106,15 @@ function row(st,o={}){
   const mark=o.mark;
   return `<li class="step${mark?' '+mark:''}" data-l="${st.l}" style="--lvl:${o.flat?0:st.l}"><span class="num">${esc(o.flat?st.path:st.num)}</span><div class="txt">${esc(st.t)}${o.extra||''}</div>${mark?`<span class="mark" aria-label="${mark==='ok'?'gewusst':'nicht gewusst'}">${mark==='ok'?'✓':'✗'}</span>`:''}</li>`;
 }
-function dueCount(){const now=Date.now();return allCards().filter(c=>card(c.cid).due<=now).length;}
+function faelligeKarten(){const now=Date.now(), set=new Set(sichtbar());return allCards().filter(c=>set.has(c.s)&&card(c.cid).due<=now);}
+function dueCount(){return faelligeKarten().length;}
 
 /* ---------- Übersicht ---------- */
 // Schemata nach dem Feld "gruppe" bündeln; Reihenfolge der Gruppen = erstes Auftreten in schemata/liste.js.
 // Schemata ohne Gruppe stehen am Ende unter "Weitere Schemata" (bzw. ohne Überschrift, wenn es gar keine Gruppen gibt).
-function gruppiert(){
+function gruppiert(liste){
   const out=[], nachName=new Map();
-  SCHEMAS.forEach(s=>{
+  liste.forEach(s=>{
     const n=s.group||'';
     if(!nachName.has(n)){const g={name:n,schemas:[]};nachName.set(n,g);out.push(g);}
     nachName.get(n).schemas.push(s);
@@ -108,6 +122,26 @@ function gruppiert(){
   const ohne=nachName.get('');
   if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
   return out;
+}
+// Abschnitte der Startseite: je Rechtsgebiet (Feld "gebiet") ein Abschnitt mit seinen Gruppen; ohne Rechtsgebiet zuletzt.
+// Zwischenüberschriften für Rechtsgebiete gibt es nur, wenn mehr als eines sichtbar ist.
+function abschnitte(){
+  const liste=sichtbar(), out=[], nachGebiet=new Map();
+  liste.forEach(s=>{
+    const g=s.gebiet||'';
+    if(!nachGebiet.has(g)){const a={gebiet:g,schemas:[]};nachGebiet.set(g,a);out.push(a);}
+    nachGebiet.get(g).schemas.push(s);
+  });
+  const ohne=nachGebiet.get('');
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.gebiet=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
+  const mitUeberschrift=out.length>1;
+  return out.map(a=>({gebiet:mitUeberschrift?a.gebiet:'',gruppen:gruppiert(a.schemas)}));
+}
+function filterHtml(){
+  const g=gebiete(); if(g.length<2) return '';
+  const aktiv=g.includes(filterGebiet)?filterGebiet:'';
+  const chip=(wert,text)=>`<button class="chipf${wert===aktiv?' aktiv':''}" data-act="gebiet" data-g="${esc(wert)}" aria-pressed="${wert===aktiv}">${esc(text)}</button>`;
+  return `<nav class="filter" aria-label="Rechtsgebiet">${chip('','Alle Gebiete')}${g.map(x=>chip(x,x)).join('')}</nav>`;
 }
 function karte(s){
   const sc=store.scores[s.id], defs=s.steps.filter(x=>x.d).length;
@@ -141,7 +175,8 @@ function renderHome(){
     <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
   </section>
   ${Eigene.werkzeuge()}
-  ${gruppiert().map(g=>`${g.name?`<h2 class="gruppe">${esc(g.name)}</h2>`:''}${g.schemas.map(karte).join('')}`).join('')}`;
+  ${filterHtml()}
+  ${abschnitte().map(a=>`${a.gebiet?`<h2 class="gebiet">${esc(a.gebiet)}</h2>`:''}${a.gruppen.map(g=>`${g.name?`<${a.gebiet?'h3':'h2'} class="gruppe">${esc(g.name)}</${a.gebiet?'h3':'h2'}>`:''}${g.schemas.map(karte).join('')}`).join('')}`).join('')}`;
 }
 
 /* ---------- Ansehen ---------- */
@@ -274,10 +309,10 @@ document.addEventListener('click',e=>{
       startCards(list); window.scrollTo(0,0); break;
     }
     case 'review': {
-      const now=Date.now();
-      const list=allCards().filter(c=>card(c.cid).due<=now).sort((a,b2)=>card(a.cid).box-card(b2.cid).box).slice(0,20);
+      const list=faelligeKarten().sort((a,b2)=>card(a.cid).box-card(b2.cid).box).slice(0,20);
       startCards(list); window.scrollTo(0,0); break;
     }
+    case 'gebiet': filterGebiet=b.dataset.g||''; merkeAnsicht(); renderHome(); break;
     case 'flip': {const t=document.getElementById('mine'); state.mine=t?t.value.trim():''; state.revealed=true; renderCards(); break;}
     case 'rateCard': rateCard(+b.dataset.v); break;
     case 'reset':

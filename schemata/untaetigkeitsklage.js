@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "utk",
   norm: "Art. 265 AEUV",
   titel: "Untätigkeitsklage",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I."],
   punkte: [

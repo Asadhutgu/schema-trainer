@@ -2,7 +2,7 @@
 // Aufruf im Projektordner:  node tools/importieren.mjs import/schemata-import.json
 //
 // Erwartetes Format der JSON-Datei: { "format": "schema-trainer-import", "schemata": [ { "datei": "name.js", "id", "norm",
-// "titel", "gliederung", "punkte", optional "herkunft" }, ... ] } – Felder wie in docs/schema-format.md.
+// "titel", "gliederung", "punkte", optional "gebiet", "gruppe", "herkunft" }, ... ] } – Felder wie in docs/schema-format.md.
 // Für jedes Schema wird schemata/<datei> geschrieben (vorhandene Dateien mit gleichem Namen werden ersetzt)
 // und in schemata/liste.js eingetragen (neue Dateien ans Ende, Reihenfolge der vorhandenen bleibt). Danach läuft die Prüfung.
 
@@ -31,6 +31,7 @@ function dateiInhalt(s) {
     `  id: ${q(s.id)},`,
     `  norm: ${q(s.norm)},`,
     `  titel: ${q(s.titel)},`,
+    s.gebiet ? `  gebiet: ${q(s.gebiet)},` : null,
     s.gruppe ? `  gruppe: ${q(s.gruppe)},` : null,
     `  gliederung: [${(s.gliederung || []).map(q).join(', ')}],`,
     '  punkte: [',

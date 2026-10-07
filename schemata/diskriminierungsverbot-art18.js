@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "art18",
   norm: "Art. 18 Abs. 1 AEUV",
   titel: "Allgemeines Diskriminierungsverbot",
+  gebiet: "Europarecht",
   gruppe: "Diskriminierungsverbot und Grundrechte",
   gliederung: ["1."],
   punkte: [

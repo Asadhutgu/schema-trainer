@@ -46,6 +46,7 @@ Die Datei ist eine Textdatei im JSON-Format. Sie enthält dieselben Felder wie e
       "id": "verfassungsbeschwerde",
       "norm": "Art. 94 Abs. 1 Nr. 4a GG",
       "titel": "Verfassungsbeschwerde",
+      "gebiet": "Öffentliches Recht",
       "gruppe": "Staatsrecht",
       "gliederung": ["A.", "I.", "1.", "a)"],
       "punkte": [

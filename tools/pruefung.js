@@ -28,7 +28,7 @@
 
   const GLIEDERUNG = ['A.', 'I.', '1.', 'a)', 'aa)'];
   const FELDER = {
-    schema: ['id', 'norm', 'titel', 'gliederung', 'punkte', 'gruppe'],
+    schema: ['id', 'norm', 'titel', 'gliederung', 'punkte', 'gruppe', 'gebiet'],
     punkt: ['ebene', 'punkt', 'definition', 'verweis'],
     definition: ['begriff', 'text', 'quelle', 'id']
   };
@@ -207,7 +207,7 @@
       pruefeFelder(Object.keys(s), FELDER.schema, datei, 'Schema');
       for (const feld of pflichtSchema) if (s[feld] === undefined) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ fehlt.', 'Pflichtfelder: ' + pflichtSchema.join(', ') + '.');
       if (eigene && !istText(s.norm)) hinweis(datei, 'Schema', 'Keine Norm angegeben.', 'Freiwillig. Die Norm erscheint in Gold über dem Titel, zum Beispiel „Art. 34 AEUV“ oder „§ 823 Abs. 1 BGB“.');
-      for (const feld of ['id', 'norm', 'titel', 'gruppe']) {
+      for (const feld of ['id', 'norm', 'titel', 'gruppe', 'gebiet']) {
         if (eigene && feld === 'norm' && (s[feld] === undefined || s[feld] === '')) continue;
         if (s[feld] !== undefined && !istText(s[feld])) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ muss ein Text in Anführungszeichen sein und darf nicht leer sein.');
       }

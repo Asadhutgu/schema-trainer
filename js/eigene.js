@@ -55,12 +55,13 @@ function freieId(wunsch, ids){
   for(let n=2;;n++){ const id=basis+'-'+n; if(!ids.has(id)) return id; }
 }
 function alleGruppen(){ const g=new Set(); (typeof SCHEMAS!=='undefined'?SCHEMAS:[]).forEach(s=>{if(s.group)g.add(s.group);}); return Array.from(g); }
+function alleGebiete(){ const g=new Set(); (typeof SCHEMAS!=='undefined'?SCHEMAS:[]).forEach(s=>{if(s.gebiet)g.add(s.gebiet);}); return Array.from(g); }
 
 /* ---------- Entwurf (automatisch gesichert, damit nichts verloren geht) ---------- */
 function entwurfLesen(){ try{ const raw=localStorage.getItem(KEY_ENTWURF); return raw?JSON.parse(raw):null; }catch(err){ return null; } }
 function entwurfSichern(){
   const e=state&&state.kind==='edit'?state.e:null; if(!e) return;
-  try{ localStorage.setItem(KEY_ENTWURF, JSON.stringify({id:e.id, schritt:e.schritt, titel:e.titel, norm:e.norm, gruppe:e.gruppe, gliederung:e.gliederung, punkte:e.punkte, zeit:Date.now()})); }catch(err){}
+  try{ localStorage.setItem(KEY_ENTWURF, JSON.stringify({id:e.id, schritt:e.schritt, titel:e.titel, norm:e.norm, gruppe:e.gruppe, gebiet:e.gebiet, gliederung:e.gliederung, punkte:e.punkte, zeit:Date.now()})); }catch(err){}
 }
 function entwurfLoeschen(){ try{ localStorage.removeItem(KEY_ENTWURF); }catch(err){} }
 
@@ -136,11 +137,12 @@ function editorStart(vorlage, optionen){
   const o=optionen||{};
   const e={
     id:o.id||null, neu:!o.id, kopieVon:o.kopieVon||'', schritt:1,
-    titel:'', norm:'', gruppe:'', gliederung:GLIEDERUNGEN[0].zeichen.slice(),
+    // Rechtsgebiet: bei neuen Schemata mit dem auf der Startseite gewählten Gebiet vorbelegt
+    titel:'', norm:'', gruppe:'', gebiet:(!o.id&&typeof filterGebiet==='string')?filterGebiet:'', gliederung:GLIEDERUNGEN[0].zeichen.slice(),
     punkte:[], offen:-1, befunde:null, rueckgaengig:null, entwurfHinweis:'', loeschenArmiert:false
   };
   if(vorlage){
-    e.titel=String(vorlage.titel||''); e.norm=String(vorlage.norm||''); e.gruppe=String(vorlage.gruppe||'');
+    e.titel=String(vorlage.titel||''); e.norm=String(vorlage.norm||''); e.gruppe=String(vorlage.gruppe||''); e.gebiet=String(vorlage.gebiet||'');
     if(Array.isArray(vorlage.gliederung)&&vorlage.gliederung.length) e.gliederung=vorlage.gliederung.slice();
     e.punkte=(Array.isArray(vorlage.punkte)?vorlage.punkte:[]).filter(p=>p&&typeof p==='object').map(p=>{
       const d=p.definition&&typeof p.definition==='object'?p.definition:null;
@@ -152,7 +154,7 @@ function editorStart(vorlage, optionen){
   // Nicht gespeicherten Entwurf für dasselbe Schema wiederherstellen
   const ent=entwurfLesen();
   if(ent&&(ent.id||null)===(e.id||null)&&!o.ohneEntwurf&&Array.isArray(ent.punkte)){
-    e.titel=String(ent.titel||''); e.norm=String(ent.norm||''); e.gruppe=String(ent.gruppe||'');
+    e.titel=String(ent.titel||''); e.norm=String(ent.norm||''); e.gruppe=String(ent.gruppe||''); e.gebiet=String(ent.gebiet||'');
     if(Array.isArray(ent.gliederung)&&ent.gliederung.length) e.gliederung=ent.gliederung;
     e.punkte=ent.punkte.filter(p=>p&&typeof p==='object').map(p=>({ebene:Number.isInteger(p.ebene)?p.ebene:0, punkt:String(p.punkt||''), verweis:typeof p.verweis==='string'?p.verweis:'', definition:p.definition&&typeof p.definition==='object'?p.definition:null}));
     e.schritt=ent.schritt===2?2:1;
@@ -187,12 +189,13 @@ function renderEditor(){
   const e=state.e;
   if(e.schritt===2){ renderDefinitionen(); return; }
   const nr=nummern(e.punkte,e.gliederung), n=e.punkte.length;
-  const gruppen=alleGruppen();
+  const gruppen=alleGruppen(), gebieteListe=alleGebiete();
   const gl=GLIEDERUNGEN.findIndex(g=>g.zeichen.join()===e.gliederung.join());
   app.innerHTML=kopfHtml(e)+`
   <div class="feld"><label for="e-titel">Titel</label><input type="text" id="e-titel" data-feld="titel" value="${esc(e.titel)}" placeholder="z. B. Verfassungsbeschwerde" autocomplete="off"></div>
   <div class="feld"><label for="e-norm">Norm (freiwillig)</label><input type="text" id="e-norm" data-feld="norm" value="${esc(e.norm)}" placeholder="z. B. Art. 94 Abs. 1 Nr. 4a GG" autocomplete="off"></div>
-  <div class="feld"><label for="e-gruppe">Gruppe auf der Startseite (freiwillig)</label><input type="text" id="e-gruppe" data-feld="gruppe" list="e-gruppen" value="${esc(e.gruppe)}" placeholder="z. B. Staatsrecht" autocomplete="off"><datalist id="e-gruppen">${gruppen.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div>
+  <div class="feld"><label for="e-gebiet">Rechtsgebiet (freiwillig)</label><input type="text" id="e-gebiet" data-feld="gebiet" list="e-gebiete" value="${esc(e.gebiet)}" placeholder="z. B. Staatsrecht oder Strafrecht" autocomplete="off"><datalist id="e-gebiete">${gebieteListe.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div>
+  <div class="feld"><label for="e-gruppe">Gruppe innerhalb des Rechtsgebiets (freiwillig)</label><input type="text" id="e-gruppe" data-feld="gruppe" list="e-gruppen" value="${esc(e.gruppe)}" placeholder="z. B. Staatsrecht" autocomplete="off"><datalist id="e-gruppen">${gruppen.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div>
   <div class="feld"><label for="e-gliederung">Gliederungszeichen</label><select id="e-gliederung" data-feld="gliederung">${GLIEDERUNGEN.map((g,i)=>`<option value="${i}"${i===gl?' selected':''}>${esc(g.name)}</option>`).join('')}${gl<0?`<option value="-1" selected>${esc(e.gliederung.join(' – '))}</option>`:''}</select></div>
   <h3>Prüfungspunkte</h3>
   <p class="sub">Eine Zeile je Prüfungspunkt. Mit den Pfeilen änderst du Ebene und Reihenfolge; Unterpunkte wandern mit. Enter legt den nächsten Punkt an.</p>
@@ -294,6 +297,7 @@ function baueSchema(e){
   const s={id:e.id||(slug(e.titel)||'neu')};
   if(e.norm.trim()) s.norm=e.norm.trim();
   s.titel=e.titel.trim();
+  if(e.gebiet.trim()) s.gebiet=e.gebiet.trim();
   if(e.gruppe.trim()) s.gruppe=e.gruppe.trim();
   s.gliederung=e.gliederung.slice();
   const karten=new Set(); // vergebene Karten-Kennungen, damit derselbe Begriff zweimal im Schema möglich ist
@@ -486,7 +490,7 @@ function exportDaten(){
     const out={datei:s.id+'.js'};
     const h=herkunft||(ei&&ei.herkunft)||'';
     if(h) out.herkunft=h;
-    ['id','norm','titel','gruppe','gliederung','punkte'].forEach(k=>{ if(r[k]!==undefined) out[k]=r[k]; });
+    ['id','norm','titel','gebiet','gruppe','gliederung','punkte'].forEach(k=>{ if(r[k]!==undefined) out[k]=r[k]; });
     return out;
   });
   if(!schemata.length) return null;
@@ -614,6 +618,7 @@ document.addEventListener('input',ev=>{
     if(t.dataset.feld==='titel') e.titel=t.value;
     else if(t.dataset.feld==='norm') e.norm=t.value;
     else if(t.dataset.feld==='gruppe') e.gruppe=t.value;
+    else if(t.dataset.feld==='gebiet') e.gebiet=t.value;
     else if(t.classList.contains('ptext')){ const i=+t.dataset.i; if(e.punkte[i]) e.punkte[i].punkt=t.value; }
     else if(t.dataset.dfeld){ leseDefinition(); }
     else return;

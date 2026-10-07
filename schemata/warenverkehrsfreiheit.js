@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wvf",
   norm: "Art. 34, 36 AEUV",
   titel: "Warenverkehrsfreiheit",
+  gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["A.", "1.", "a)"],
   punkte: [

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "sh",
   norm: "Art. 4 Abs. 3 EUV",
   titel: "Unionsrechtlicher Staatshaftungsanspruch",
+  gebiet: "Europarecht",
   gruppe: "Grundlagen",
   gliederung: ["I.", "1."],
   punkte: [

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "ahk",
   norm: "Art. 268, 340 Abs. 2 AEUV",
   titel: "Amtshaftungsklage",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I."],
   punkte: [
