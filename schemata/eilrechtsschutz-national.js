@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "eil-national",
   norm: "Art. 267, 278, 279 AEUV",
   titel: "Nationaler Eilrechtsschutz bei Gültigkeitszweifeln",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["1."],
   punkte: [

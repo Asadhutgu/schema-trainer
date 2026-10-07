@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "eil-union",
   norm: "Art. 278, 279 AEUV",
   titel: "Eilrechtsschutz vor den Unionsgerichten",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I."],
   punkte: [

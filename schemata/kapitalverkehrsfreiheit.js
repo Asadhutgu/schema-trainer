@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "kvf",
   norm: "Art. 63 AEUV",
   titel: "Kapital- und Zahlungsverkehrsfreiheit",
+  gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["A.", "1.", "a)"],
   punkte: [

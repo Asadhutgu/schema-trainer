@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "vvv",
   norm: "Art. 258, 259 AEUV",
   titel: "Vertragsverletzungsverfahren",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I.", "1.", "a)"],
   punkte: [

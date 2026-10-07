@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "dlf",
   norm: "Art. 56, 57 AEUV",
   titel: "Dienstleistungsfreiheit",
+  gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["A.", "1.", "a)"],
   punkte: [

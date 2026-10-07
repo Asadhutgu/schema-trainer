@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "rm",
   norm: "Art. 256 AEUV, Art. 56 ff. Satzung",
   titel: "Rechtsmittelverfahren",
+  gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I.", "1."],
   punkte: [

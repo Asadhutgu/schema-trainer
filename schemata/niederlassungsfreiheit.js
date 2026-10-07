@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "nlf",
   norm: "Art. 49, 54 AEUV",
   titel: "Niederlassungsfreiheit",
+  gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["A.", "1.", "a)"],
   punkte: [
