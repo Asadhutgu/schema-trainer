@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Schema-Trainer | Examensvorbereitung Öffentliches Recht</title>
+<title>Schema-Trainer | Eigene Schemata</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -13,7 +13,7 @@
     <div class="badge" aria-hidden="true">E</div>
     <div>
       <h1>Schema-Trainer</h1>
-      <p>Examensvorbereitung Öffentliches Recht</p>
+      <p>Eigene Schemata – leere Umgebung</p>
     </div>
   </div>
 </header>
@@ -21,14 +21,14 @@
 <main id="app" aria-live="polite"></main>
 
 <footer>
-  <p>Inhalte vor dem Auswendiglernen mit Skript und Rechtsprechung abgleichen.</p>
+  <p>Deine Schemata und dein Lernstand liegen nur in diesem Browser. Sichere sie regelmäßig über „Exportieren“.</p>
   <button class="linkbtn" data-act="reset">Lernstand zurücksetzen</button>
 </footer>
 
-<!-- Die Schema-Dateien stehen in schemata/liste.js. js/app.js lädt sie von dort.
-     tools/pruefung.js prüft eigene Schemata im Editor, js/eigene.js verwaltet sie (vor js/app.js laden). -->
-<script>window.SCHEMATA = [];</script>
-<script src="schemata/liste.js"></script>
+<!-- Standalone-Variante: Die mitgelieferten Schema-Dateien (schemata/liste.js) werden hier bewusst nicht geladen.
+     Es erscheinen nur Schemata, die in der App angelegt oder importiert wurden (gespeichert im Browser).
+     Dieselben eigenen Schemata erscheinen auch in index.html neben den mitgelieferten. -->
+<script>window.SCHEMATA = []; window.NUR_EIGENE = true;</script>
 <script src="tools/pruefung.js"></script>
 <script src="js/eigene.js"></script>
 <script src="js/app.js"></script>
