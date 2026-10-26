@@ -251,7 +251,7 @@ async function szenario(browser, basis, name) {
   await page.mouse.move(quelle.x + quelle.width / 2, quelle.y + quelle.height / 2);
   await page.mouse.down();
   await page.mouse.move(quelle.x + 40, quelle.y + 20, { steps: 5 });
-  await page.locator('.vslot[data-vslot="1"]').scrollIntoViewIfNeeded();
+  await page.locator('.vslot[data-vslot="1"]').evaluate(el => el.scrollIntoView({ block: 'center' })); // mittig, damit das Mitscrollen am Rand nicht greift
   const ziel = await page.locator('.vslot[data-vslot="1"]').boundingBox();
   await page.mouse.move(ziel.x + ziel.width / 2, ziel.y + ziel.height / 2, { steps: 10 });
   await page.mouse.up();

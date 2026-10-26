@@ -410,7 +410,7 @@ function renderMove(){
     :`<p class="task">Setze die Prüfungspunkte an die richtige Stelle.</p><p class="sub">Ziehen (am Handy kurz halten) oder antippen: erst den Punkt, dann die Stelle. Ein abgelegter Punkt kehrt durch Antippen in den Vorrat zurück.</p>`)
   +`<ol class="outline verschieben">${s.steps.map((st,i)=>{
     const x=slots[i], leer=x===null, ok=fertig&&x===i;
-    const klasse='step vslot'+(leer?' leer':'')+(fertig?(ok?' ok':' bad'):'')+(!fertig&&gewaehlt!==null&&leer?' bereit':'');
+    const klasse='step vslot'+(leer?' offen':'')+(fertig?(ok?' ok':' bad'):'')+(!fertig&&gewaehlt!==null&&leer?' bereit':'');
     const inhalt=fertig
       ?(leer?`<span class="placeholder">${esc(st.t)}</span>`:`${esc(s.steps[x].t)}${ok?'':`<div class="richtig">Richtig: ${esc(st.t)}</div>`}`)
       :(leer?`<span class="placeholder">${gewaehlt!==null?'Hier ablegen':'…'}</span>`:`<button class="vitem${gewaehlt===x?' gewaehlt':''}" data-act="v-abgelegt" data-vitem="${x}" data-von="slot">${esc(s.steps[x].t)}</button>`);
