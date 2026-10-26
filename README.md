@@ -34,6 +34,12 @@ Im Reiter „Eigene Schemata“: „Exportieren“ schreibt ausgewählte Schemat
 
 Die Export-Datei eignet sich auch als Sicherung der eigenen Schemata und zum Übertragen zwischen Handy und PC.
 
+## Schemata mit allen teilen (GitHub)
+
+Wer ein eigenes Schema allen zur Verfügung stellen will, wählt unter „Exportieren“ den Knopf „Für alle auf GitHub hochladen“. Die App erklärt, dass das Schema damit öffentlich wird, und öffnet dann die GitHub-Seite für eine neue Datei im Ordner `community`, mit Dateiname und Inhalt bereits eingetragen. Nötig ist ein kostenloses GitHub-Konto. Auf GitHub genügen drei Klicks („Commit changes…“, „Propose changes“, „Create pull request“); die Datei geht damit als Vorschlag an den Betreiber, der sie prüft und freischaltet. Niemand kann die Seite direkt verändern.
+
+Freigegebene Schemata holt sich jeder über „Importieren“ und „Liste von GitHub laden“: Die App zeigt die Dateien aus dem Ordner `community`, man kreuzt an, was man übernehmen will, und importiert wie gewohnt. Mehr dazu in `community/README.md` und `docs/import-export.md`.
+
 ## Schema-Dateien prüfen (ohne Installation)
 
 `pruefen.html` doppelklicken. Die Seite prüft alle Schema-Dateien im Ordner `schemata` und zeigt jeden Fehler mit Datei, Stelle und einem Tipp zur Behebung an. Nach einer Änderung an einer Datei einfach die Seite neu laden.

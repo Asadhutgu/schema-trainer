@@ -89,6 +89,8 @@
       m => 'Unerwartetes Wort' + (m[1] || m[2] ? ' „' + (m[1] || m[2]) + '“' : '') + '. Davor fehlt wahrscheinlich ein Komma oder ein Anführungszeichen.'],
     [/unexpected string|unexpected token: string literal|unexpected number|unexpected token: numeric literal/i,
       () => 'Unerwarteter Wert an dieser Stelle. Davor fehlt wahrscheinlich ein Komma.'],
+    [/expected property name|expected ',' or '}'|expected ',' or ']'|expected double-quoted property name|in JSON at position|JSON\.parse/i,
+      () => 'Die Datei ist kein gültiges JSON. Meist fehlt ein Anführungszeichen, ein Komma oder eine Klammer, oder ein Komma steht vor einer schließenden Klammer.'],
     [/unexpected end of input|unexpected eof|end of data|end of script/i,
       () => 'Die Datei endet zu früh. Wahrscheinlich fehlt am Ende eine schließende Klammer: ) oder ] oder }.'],
     [/invalid or unexpected token|illegal character|invalid character|unterminated string/i,

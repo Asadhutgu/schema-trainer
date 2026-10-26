@@ -446,8 +446,9 @@ document.addEventListener('pointermove',e=>{
     try{ zieh.el.setPointerCapture(e.pointerId); }catch(err){}
   }
   e.preventDefault();
-  // Nahe am oberen oder unteren Rand die Seite mitscrollen, damit auch entfernte Stellen erreichbar sind
-  const rand=70; if(e.clientY<rand) window.scrollBy(0,-16); else if(e.clientY>window.innerHeight-rand) window.scrollBy(0,16);
+  // Nahe am oberen oder unteren Rand die Seite mitscrollen, aber nur, solange der Zeiger weiter auf den Rand zugeht
+  const rand=70, vorher=zieh.letztesY===undefined?e.clientY:zieh.letztesY; zieh.letztesY=e.clientY;
+  if(e.clientY<rand&&e.clientY<=vorher) window.scrollBy(0,-16); else if(e.clientY>window.innerHeight-rand&&e.clientY>=vorher) window.scrollBy(0,16);
   zieh.ghost.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
   document.querySelectorAll('.vslot.ziel').forEach(el=>el.classList.remove('ziel'));
   const slot=vSlotUnter(e.clientX,e.clientY); if(slot) slot.classList.add('ziel');

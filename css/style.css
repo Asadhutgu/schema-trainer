@@ -167,6 +167,15 @@ footer p{margin:0;max-width:52ch;}
 .vghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;max-width:70vw;margin:-1.4rem 0 0 -2rem;padding:.55rem .9rem;border-radius:8px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.18);font:inherit;font-size:.95rem;}
 .vorrat{margin-top:.25rem;}
 
+/* ---------- Gemeinschaft: Hochladen und Herunterladen über GitHub ---------- */
+.githubbox{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:1rem 1.15rem 1.1rem;margin:1.25rem 0 0;}
+.githubbox h3{margin:0 0 .5rem;}
+.githubbox p{margin:0 0 .6rem;}
+.githubbox ul,.githubbox ol{margin:.2rem 0 .6rem;padding-left:1.25rem;}
+.githubbox li{margin:.3rem 0;}
+.githubbox textarea{font-family:Consolas,"Courier New",monospace;font-size:.8rem;margin-top:.5rem;}
+.github-start{margin-top:1.25rem;}
+
 /* ---------- Hinweis in der App, wenn Schema-Dateien fehlen ---------- */
 .hinweisbox{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:.8rem 1.1rem;margin-bottom:1.25rem;}
 .hinweisbox a{color:var(--gold-ink);}

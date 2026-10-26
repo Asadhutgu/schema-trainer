@@ -29,6 +29,15 @@ Hat ein Schema dieselbe Kennung (`id`) wie ein vorhandenes, entscheidet man je S
 - Kennung eines eigenen Schemas: „Vorhandenes ersetzen“ (Vorgabe), „Zusätzlich als Kopie anlegen“ (die Kopie bekommt eine neue Kennung wie `verfassungsbeschwerde-2`) oder „Überspringen“.
 - Kennung eines mitgelieferten Schemas: „Als eigenes Schema mit neuer Kennung anlegen“ (Vorgabe), „Mitgeliefertes Schema durch dieses ersetzen“ oder „Überspringen“. Beim Ersetzen bleibt der Lernstand erhalten, weil die Karten an der Kennung hängen; wird die eigene Fassung später gelöscht, erscheint wieder das Original.
 
+## Für alle hochladen und von GitHub herunterladen
+
+Die App hat keinen eigenen Server. Geteilt wird deshalb über das GitHub-Projekt des Schema-Trainers, Ordner `community/`:
+
+- **Hochladen:** „Exportieren“ → eigene Schemata ankreuzen → „Für alle auf GitHub hochladen“. Nach einem Hinweis, dass das Schema öffentlich wird, öffnet die App in einem neuen Tab die GitHub-Seite „neue Datei“ im Ordner `community` mit Dateiname (zum Beispiel `verfassungsbeschwerde-2026-10-26.json`) und Inhalt. Bei sehr großen Schemata passt der Inhalt nicht in die Adresse; dann liegt er in der Zwischenablage und wird mit Strg+V eingefügt (die App zeigt ihn zusätzlich an). Nötig ist ein kostenloses GitHub-Konto. „Commit changes…“, „Propose changes“ und „Create pull request“ reichen die Datei als Vorschlag ein; GitHub legt dafür automatisch eine Kopie des Projekts im eigenen Konto an. Der Betreiber prüft den Vorschlag (die automatische Prüfung meldet Formfehler) und übernimmt ihn mit „Merge pull request“.
+- **Herunterladen:** „Importieren“ → „Liste von GitHub laden“. Die App fragt die GitHub-Schnittstelle nach den Dateien im Ordner `community` und lädt sie. Sie erscheinen in der Vorschau zunächst nicht angekreuzt, mit dem Vermerk „von GitHub“; angekreuzte werden wie bei jedem Import übernommen. Ohne Internetverbindung oder bei zu vielen Abfragen von einem Anschluss (GitHub erlaubt etwa 60 pro Stunde) zeigt die App einen Hinweis.
+
+Das Projekt, der Branch und der Ordner stehen in `js/eigene.js` (`GITHUB`).
+
 ## Aufbau der Export-Datei
 
 Die Datei ist eine Textdatei im JSON-Format. Sie enthält dieselben Felder wie eine Schema-Datei (`docs/schema-format.md`), nur in JSON-Schreibweise, sowie je Schema den vorgeschlagenen Dateinamen `datei` und wahlweise eine `herkunft`.

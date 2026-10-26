@@ -16,6 +16,11 @@ const Eigene=(()=>{
 'use strict';
 const KEY_EIGENE='schematrainer:eigene:v1', KEY_ENTWURF='schematrainer:entwurf:v1';
 const FORMAT='schema-trainer-import';
+// Gemeinschaft: Von Nutzern geteilte Schemata liegen im Ordner community/ des Repositories und damit auf GitHub Pages.
+// Hochladen läuft über GitHub selbst (die App öffnet die Seite „neue Datei“ mit fertigem Inhalt, GitHub macht daraus
+// einen Vorschlag/Pull Request, den der Betreiber freigibt); Herunterladen über die GitHub-API und die Rohdateien.
+const GITHUB={owner:'Asadhutgu', repo:'schema-trainer', branch:'main', ordner:'community'};
+const GITHUB_URL_MAX=6500; // längere Adressen nimmt GitHub nicht sicher an; dann wird der Inhalt stattdessen nur kopiert
 // Auswahl für das Feld "gliederung" im Editor (erstes = Vorgabe für neue Schemata)
 const GLIEDERUNGEN=[
   {zeichen:['A.','I.','1.','a)'], name:'A. – I. – 1. – a)  (Klageschema: Zulässigkeit, Begründetheit)'},
@@ -388,7 +393,7 @@ function importVorschau(){
     if(d.text===null){ st.fehler.push('„'+d.name+'“ konnte nicht gelesen werden.'); return; }
     const r=leseImportText(d.text, d.name);
     if(r.fehler){ st.fehler.push('„'+d.name+'“: '+r.fehler); return; }
-    r.schemata.forEach(s=>roh.push({s, datei:d.name, herkunftDatei:r.herkunft}));
+    r.schemata.forEach(s=>roh.push({s, datei:d.name, herkunftDatei:r.herkunft, github:!!d.github}));
   });
   if(st.text.trim()){
     const r=leseImportText(st.text,'eingefügter Text');
@@ -396,9 +401,9 @@ function importVorschau(){
   }
   // Felder des Import-/Exportformats, die nicht ins Schema gehören, vorher herausnehmen
   const bereinigt=roh.map(x=>{
-    if(!x.s||typeof x.s!=='object') return {schema:x.s, herkunft:x.herkunftDatei, datei:x.datei};
+    if(!x.s||typeof x.s!=='object') return {schema:x.s, herkunft:x.herkunftDatei, datei:x.datei, github:x.github};
     const {datei, herkunft, ...schema}=x.s;
-    return {schema, herkunft:typeof herkunft==='string'&&herkunft?herkunft:x.herkunftDatei, datei:x.datei};
+    return {schema, herkunft:typeof herkunft==='string'&&herkunft?herkunft:x.herkunftDatei, datei:x.datei, github:x.github};
   });
   const erg=pruefeSchemata(bereinigt.map(b=>b.schema));
   const eigeneIds=new Set(eintraege.map(x=>x.schema.id));
@@ -408,8 +413,9 @@ function importVorschau(){
     const s=b.schema, id=s&&typeof s.id==='string'?s.id:'';
     let konflikt='';
     if(id&&eigeneIds.has(id)) konflikt='eigen'; else if(id&&geladene.has(id)) konflikt='mitgeliefert';
-    return {schema:s, herkunft:b.herkunft, datei:b.datei, fehler:je.fehler, hinweise:je.hinweise, konflikt,
-      wahl:je.fehler.length?'aus':(konflikt==='eigen'?'ersetzen':konflikt==='mitgeliefert'?'kopie':'neu')};
+    return {schema:s, herkunft:b.herkunft, datei:b.datei, github:b.github, fehler:je.fehler, hinweise:je.hinweise, konflikt,
+      // Dateien von GitHub sind zunächst nicht angekreuzt; der Nutzer wählt aus
+      wahl:(je.fehler.length||b.github)?'aus':(konflikt==='eigen'?'ersetzen':konflikt==='mitgeliefert'?'kopie':'neu')};
   });
   renderImport();
 }
@@ -425,6 +431,12 @@ function renderImport(){
   </div>
   <div class="feld"><label for="importtext">Oder Text hier einfügen</label><textarea id="importtext" rows="4" placeholder='{ "format": "schema-trainer-import", "schemata": [ … ] }'>${esc(st.text)}</textarea></div>
   <div class="actions"><button class="btn" data-act="i-text">Text prüfen</button></div>
+  <section class="githubbox">
+    <h3>Aus GitHub herunterladen</h3>
+    <p class="sub">Schemata, die andere Nutzer für alle hochgeladen haben und die der Betreiber freigegeben hat. Du wählst danach aus, welche du übernimmst.</p>
+    <div class="actions"><button class="btn" data-act="i-github"${st.githubLaedt?' disabled':''}>${st.githubLaedt?'Lade von GitHub …':'Liste von GitHub laden'}</button></div>
+    ${st.githubHinweis?`<p class="sub">${esc(st.githubHinweis)}</p>`:''}
+  </section>
   ${st.fehler.length?`<div class="befundbox bad"><ul class="befunde">${st.fehler.map(f=>`<li class="befund fehler"><span class="art">Fehler</span><div><p>${esc(f)}</p></div></li>`).join('')}</ul></div>`:''}
   ${v?(v.length?`<h3>Gefunden: ${v.length} ${v.length===1?'Schema':'Schemata'}</h3><ul class="dateien">${v.map((x,i)=>{
       const s=x.schema||{}, lage=x.fehler.length?'bad':x.hinweise.length?'warn':'ok';
@@ -434,13 +446,36 @@ function renderImport(){
       else if(x.konflikt==='eigen') wahl=`<label class="wahl">Du hast schon ein eigenes Schema mit der Kennung „${esc(s.id)}“: <select data-wahl="${i}"><option value="ersetzen"${x.wahl==='ersetzen'?' selected':''}>Vorhandenes ersetzen</option><option value="kopie"${x.wahl==='kopie'?' selected':''}>Zusätzlich als Kopie anlegen</option><option value="aus"${x.wahl==='aus'?' selected':''}>Überspringen</option></select></label>`;
       else if(x.konflikt==='mitgeliefert') wahl=`<label class="wahl">Die Kennung „${esc(s.id)}“ gehört einem mitgelieferten Schema: <select data-wahl="${i}"><option value="kopie"${x.wahl==='kopie'?' selected':''}>Als eigenes Schema mit neuer Kennung anlegen</option><option value="ersetzen"${x.wahl==='ersetzen'?' selected':''}>Mitgeliefertes Schema durch dieses ersetzen</option><option value="aus"${x.wahl==='aus'?' selected':''}>Überspringen</option></select></label>`;
       else wahl=`<label class="wahl"><input type="checkbox" data-wahl="${i}"${x.wahl!=='aus'?' checked':''}> Importieren</label>`;
-      return `<li class="datei ${lage}"><div class="datei-kopf"><span class="sym" aria-hidden="true">${lage==='bad'?'✗':lage==='warn'?'!':'✓'}</span><span class="name">${esc(titel)}${typeof s.norm==='string'&&s.norm?' <span class="info">('+esc(s.norm)+')</span>':''}</span><span class="info">${zaehl(s)}${x.herkunft?' · Herkunft: '+esc(x.herkunft):''}${x.datei&&st.dateien.length+ (st.text.trim()?1:0)>1?' · aus '+esc(x.datei):''}</span></div>
+      return `<li class="datei ${lage}"><div class="datei-kopf"><span class="sym" aria-hidden="true">${lage==='bad'?'✗':lage==='warn'?'!':'✓'}</span><span class="name">${esc(titel)}${typeof s.norm==='string'&&s.norm?' <span class="info">('+esc(s.norm)+')</span>':''}</span><span class="info">${zaehl(s)}${x.herkunft?' · Herkunft: '+esc(x.herkunft):''}${x.github?' · von GitHub ('+esc(x.datei)+')':(x.datei&&st.dateien.length+(st.text.trim()?1:0)>1?' · aus '+esc(x.datei):'')}</span></div>
         <div class="datei-wahl">${wahl}</div>
         ${x.fehler.length||x.hinweise.length?`<ul class="befunde">${x.fehler.map(b=>`<li class="befund fehler"><span class="art">Fehler</span><div>${b.ort?`<div class="ort">${esc(b.ort)}</div>`:''}<p>${esc(b.text)}</p>${b.tipp?`<p class="tipp">Tipp: ${esc(b.tipp)}</p>`:''}</div></li>`).join('')}${x.hinweise.map(b=>`<li class="befund hinweis"><span class="art">Hinweis</span><div>${b.ort?`<div class="ort">${esc(b.ort)}</div>`:''}<p>${esc(b.text)}</p></div></li>`).join('')}</ul>`:''}
       </li>`;}).join('')}</ul>
     <div class="controls flach"><button class="btn" data-act="i-leeren">Auswahl verwerfen</button><button class="btn primary" data-act="i-ausfuehren"${importierbar?'':' disabled'}>${importierbar===1?'1 Schema importieren':importierbar+' Schemata importieren'}</button></div>`
     :'<p class="sub">In den Dateien wurde kein Schema gefunden.</p>'):''}
   ${speicherFehler?`<div class="hinweisbox" role="alert">${esc(speicherFehler)}</div>`:''}`;
+}
+// Freigegebene Schemata aus dem Ordner community/ des Repositories holen und in die Vorschau stellen
+async function githubLaden(){
+  const st=state; if(!st||st.kind!=='import'||st.githubLaedt) return;
+  st.githubLaedt=true; st.githubHinweis=''; renderImport();
+  try{
+    const r=await fetch(`https://api.github.com/repos/${GITHUB.owner}/${GITHUB.repo}/contents/${GITHUB.ordner}?ref=${GITHUB.branch}`,{headers:{Accept:'application/vnd.github+json'}});
+    if(r.status===404) throw new Error('Auf GitHub liegen noch keine freigegebenen Schemata.');
+    if(r.status===403||r.status===429) throw new Error('GitHub lässt von diesem Anschluss gerade keine weiteren Abfragen zu. Bitte später noch einmal versuchen.');
+    if(!r.ok) throw new Error('GitHub antwortet mit Fehler '+r.status+'.');
+    const liste=(await r.json()).filter(e=>e&&e.type==='file'&&/\.json$/i.test(e.name)&&e.download_url);
+    if(!liste.length){ st.githubHinweis='Auf GitHub liegen noch keine freigegebenen Schemata.'; return; }
+    let neu=0;
+    for(const e of liste){
+      if(st.dateien.some(d=>d.github&&d.name===e.name)) continue;
+      try{ const t=await fetch(e.download_url); if(!t.ok) throw new Error(); st.dateien.push({name:e.name, text:await t.text(), github:true}); }
+      catch(err){ st.dateien.push({name:e.name, text:null, github:true}); }
+      neu++;
+    }
+    st.githubHinweis=neu?`${liste.length} ${liste.length===1?'Datei':'Dateien'} von GitHub geladen. Kreuze unten an, was du übernehmen möchtest.`:'Keine neuen Dateien auf GitHub; alle stehen schon in der Liste.';
+  }catch(err){
+    st.githubHinweis=err instanceof TypeError?'GitHub ist gerade nicht erreichbar. Prüfe die Internetverbindung und versuche es noch einmal.':'Laden von GitHub nicht möglich: '+err.message;
+  }finally{ st.githubLaedt=false; importVorschau(); }
 }
 function importAusfuehren(){
   const st=state, v=st.vorschau; if(!v) return;
@@ -477,10 +512,21 @@ function renderExport(){
     ${navigator.share?'<button class="btn" data-act="x-teilen">Teilen</button>':''}
     <button class="btn primary" data-act="x-datei">Datei herunterladen</button>
   </div>
-  <div id="x-ausgabe" aria-live="polite">${st.text?`<p class="sub">${esc(st.hinweis||'')}</p><textarea id="x-text" rows="10" readonly>${esc(st.text)}</textarea>`:''}</div>`;
+  <div id="x-ausgabe" aria-live="polite">${st.text?`<p class="sub">${esc(st.hinweis||'')}</p><textarea id="x-text" rows="10" readonly>${esc(st.text)}</textarea>`:''}</div>
+  ${eigene.length?`<div class="actions github-start"><button class="btn" data-act="x-github">Für alle auf GitHub hochladen</button></div>`:''}
+  <div id="x-github">${githubBoxHtml(st)}</div>`;
 }
-function exportDaten(){
-  const ids=Array.from(app.querySelectorAll('[data-export]:checked')).map(el=>el.dataset.export);
+async function githubUploadStarten(){
+  const st=state, u=githubUploadVorbereiten();
+  if(!u){ st.github='erklaert'; renderExport(); return; }
+  // Erst das Fenster öffnen (muss direkt aus dem Klick heraus geschehen), dann den Inhalt in die Zwischenablage legen
+  try{ window.open(u.url,'_blank','noopener'); }catch(err){}
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) await navigator.clipboard.writeText(u.text); }catch(err){}
+  st.github='offen'; st.githubUpload=u; renderExport();
+  const box=app.querySelector('#x-github'); if(box) box.scrollIntoView({block:'start',behavior:reduceMotion()?'auto':'smooth'});
+}
+function exportDaten(nurEigene){
+  const ids=Array.from(app.querySelectorAll('[data-export]:checked')).map(el=>el.dataset.export).filter(id=>!nurEigene||istEigen(id));
   const herkunft=(app.querySelector('#x-herkunft')||{value:''}).value.trim();
   const alle=typeof SCHEMAS!=='undefined'?SCHEMAS:[];
   const schemata=ids.map(id=>alle.find(s=>s.id===id)).filter(Boolean).map(s=>{
@@ -495,7 +541,48 @@ function exportDaten(){
   if(!schemata.length) return null;
   const daten={format:FORMAT, version:1, app:'Schema-Trainer', exportiert:heute(), schemata};
   const name=schemata.length===1?schemata[0].id+'.json':'schema-trainer-export-'+heute()+'.json';
-  return {text:JSON.stringify(daten,null,2), name, anzahl:schemata.length};
+  return {text:JSON.stringify(daten,null,2), kompakt:JSON.stringify(daten), name, anzahl:schemata.length, ids:schemata.map(x=>x.id)};
+}
+// Für alle hochladen: GitHub-Seite „neue Datei“ im Ordner community/ öffnen, Dateiname und Inhalt vorausgefüllt
+function githubUploadVorbereiten(){
+  const d=exportDaten(true); if(!d) return null;
+  const name=(d.anzahl===1?d.ids[0]:'schemata')+'-'+heute()+'.json';
+  const basis=`https://github.com/${GITHUB.owner}/${GITHUB.repo}/new/${GITHUB.branch}/${GITHUB.ordner}?filename=${encodeURIComponent(name)}`;
+  const mitInhalt=basis+'&value='+encodeURIComponent(d.kompakt);
+  const passt=mitInhalt.length<=GITHUB_URL_MAX;
+  return {name, url:passt?mitInhalt:basis, vorausgefuellt:passt, text:d.kompakt, anzahl:d.anzahl};
+}
+function githubBoxHtml(st){
+  const d=exportDaten(true), n=d?d.anzahl:0;
+  if(st.github==='offen'&&st.githubUpload){
+    const u=st.githubUpload;
+    return `<section class="githubbox">
+      <h3>GitHub ist in einem neuen Tab geöffnet</h3>
+      <ol class="schritteliste">
+        <li>Falls nötig bei GitHub anmelden oder ein kostenloses Konto anlegen.</li>
+        <li>${u.vorausgefuellt?'Dateiname und Inhalt sind schon eingetragen. Ist das große Textfeld leer, den Inhalt mit Strg+V (Mac: Cmd+V) einfügen; er liegt in der Zwischenablage.':'Den Inhalt mit Strg+V (Mac: Cmd+V) in das große Textfeld einfügen; er liegt in der Zwischenablage. Der Dateiname ist schon eingetragen.'}</li>
+        <li>Oben rechts „Commit changes…“ anklicken und dann „Propose changes“.</li>
+        <li>Auf der nächsten Seite „Create pull request“ anklicken. Fertig: Der Betreiber bekommt eine Nachricht und schaltet das Schema nach Prüfung frei.</li>
+      </ol>
+      <p class="sub">Falls sich kein neuer Tab geöffnet hat: <a href="${esc(u.url)}" target="_blank" rel="noopener">GitHub-Seite öffnen</a>. Datei: <code>${esc(GITHUB.ordner+'/'+u.name)}</code></p>
+      <textarea id="x-githubtext" rows="6" readonly aria-label="Inhalt der Datei">${esc(u.text)}</textarea>
+      <div class="actions"><button class="btn" data-act="x-github-zu">Schließen</button></div>
+    </section>`;
+  }
+  if(st.github==='erklaert'){
+    return `<section class="githubbox">
+      <h3>Für alle auf GitHub hochladen</h3>
+      <p>Damit wird dein Schema <strong>öffentlich</strong>: Es geht als Vorschlag an das GitHub-Projekt des Schema-Trainers. Der Betreiber prüft es und schaltet es frei; danach kann es jeder über „Importieren“ und „Aus GitHub herunterladen“ laden.</p>
+      <ul>
+        <li>Du brauchst ein kostenloses GitHub-Konto; GitHub fragt danach.</li>
+        <li>Hochgeladen werden nur deine eigenen Schemata, die oben angekreuzt sind: ${n} ${n===1?'Schema':'Schemata'}.</li>
+        <li>Die Angabe im Feld „Herkunft“ wird mit veröffentlicht; dein Lernstand nicht.</li>
+      </ul>
+      <div class="actions"><button class="btn primary" data-act="x-github-los"${n?'':' disabled'}>Weiter zu GitHub</button><button class="btn" data-act="x-github-zu">Abbrechen</button></div>
+      ${n?'':'<p class="sub">Bitte oben mindestens ein eigenes Schema ankreuzen.</p>'}
+    </section>`;
+  }
+  return '';
 }
 function exportMeldung(text){ const z=app.querySelector('#x-ausgabe'); if(z) z.innerHTML=`<p class="sub">${esc(text)}</p>`; }
 async function exportAktion(art){
@@ -601,10 +688,14 @@ function aktion(act, b){
     case 'i-text': { const t=app.querySelector('#importtext'); state.text=t?t.value:''; importVorschau(); return true; }
     case 'i-leeren': importStart(); return true;
     case 'i-ausfuehren': importAusfuehren(); return true;
+    case 'i-github': githubLaden(); return true;
     case 'x-start': exportStart(); return true;
     case 'x-datei': exportAktion('datei'); return true;
     case 'x-teilen': exportAktion('teilen'); return true;
     case 'x-kopieren': exportAktion('kopieren'); return true;
+    case 'x-github': { state.github='erklaert'; state.githubUpload=null; renderExport(); const box=app.querySelector('#x-github'); if(box) box.scrollIntoView({block:'start',behavior:reduceMotion()?'auto':'smooth'}); return true; }
+    case 'x-github-los': githubUploadStarten(); return true;
+    case 'x-github-zu': state.github=''; state.githubUpload=null; renderExport(); return true;
   }
   return false;
 }

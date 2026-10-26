@@ -246,7 +246,7 @@ async function szenario(browser, basis, name) {
   check(await page.evaluate(() => state.slots[2] === 2), 'Markierter Punkt an anderer Stelle abgelegt');
   // Ziehen mit der Maus (Quelle und Ziel werden dabei in den sichtbaren Bereich gescrollt)
   const quelleEl = page.locator('.vorrat .vitem[data-vitem="1"]');
-  await quelleEl.scrollIntoViewIfNeeded();
+  await quelleEl.evaluate(el => el.scrollIntoView({ block: 'center' })); // mittig, nicht unter der haftenden Knopfleiste
   const quelle = await quelleEl.boundingBox();
   await page.mouse.move(quelle.x + quelle.width / 2, quelle.y + quelle.height / 2);
   await page.mouse.down();
@@ -254,6 +254,8 @@ async function szenario(browser, basis, name) {
   await page.locator('.vslot[data-vslot="1"]').evaluate(el => el.scrollIntoView({ block: 'center' })); // mittig, damit das Mitscrollen am Rand nicht greift
   const ziel = await page.locator('.vslot[data-vslot="1"]').boundingBox();
   await page.mouse.move(ziel.x + ziel.width / 2, ziel.y + ziel.height / 2, { steps: 10 });
+  const ziel2 = await page.locator('.vslot[data-vslot="1"]').boundingBox(); // falls die Seite unterwegs gescrollt hat
+  await page.mouse.move(ziel2.x + ziel2.width / 2, ziel2.y + ziel2.height / 2, { steps: 3 });
   await page.mouse.up();
   check(await page.evaluate(() => state.slots[1] === 1), 'Punkt per Ziehen mit der Maus abgelegt');
   check(await page.locator('.vghost').count() === 0 && await page.locator('.vorrat .vitem.gewaehlt').count() === 0, 'Nach dem Ziehen bleibt nichts markiert');
@@ -296,6 +298,18 @@ async function szenario(browser, basis, name) {
   await page.click('[data-act="x-kopieren"]');
   await page.waitForFunction(() => /kopiert|von Hand/.test(document.querySelector('#x-ausgabe').textContent));
   check(true, 'Kopieren liefert Rückmeldung');
+  // Für alle auf GitHub hochladen: Erklärung, dann GitHub-Seite mit Dateiname und Inhalt (window.open wird abgefangen)
+  await page.evaluate(() => { window.__geoeffnet = null; window.open = (u) => { window.__geoeffnet = u; return null; }; });
+  await page.click('[data-act="x-github"]');
+  await page.waitForSelector('[data-act="x-github-los"]');
+  check((await txt('.githubbox')).includes('öffentlich') && (await txt('.githubbox')).includes('1 Schema'), 'Hinweis: Hochladen ist öffentlich, nur eigene angekreuzte Schemata');
+  await page.click('[data-act="x-github-los"]');
+  await page.waitForSelector('#x-githubtext');
+  const geoeffnet = await page.evaluate(() => window.__geoeffnet);
+  const inhaltOk = typeof geoeffnet === 'string' && geoeffnet.startsWith('https://github.com/Asadhutgu/schema-trainer/new/main/community?filename=verfassungsbeschwerde-') && /&value=/.test(geoeffnet) && decodeURIComponent(geoeffnet.split('&value=')[1]).includes('"id":"verfassungsbeschwerde"');
+  check(inhaltOk, 'GitHub-Seite „neue Datei“ mit Dateiname und Inhalt geöffnet');
+  check((await txt('.githubbox')).includes('Create pull request'), 'Anleitung für die Schritte auf GitHub');
+  await page.click('[data-act="x-github-zu"]');
 
   // 7. Import als Text mit Konflikt zu eigenem Schema
   await page.click('[data-act="home"]');
@@ -394,6 +408,28 @@ async function szenario(browser, basis, name) {
   await page.waitForSelector('article.schema');
   const aktiv = await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w');
   check(await karten() === (jeBereich[aktiv] || 0), 'Fertige Schemata wieder vollständig (' + aktiv + ')');
+
+  // 15. Aus GitHub herunterladen (die Antworten von GitHub werden im Test nachgestellt)
+  await page.route('https://api.github.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+    { name: 'gemeinschaft-test.json', type: 'file', download_url: 'https://raw.githubusercontent.com/Asadhutgu/schema-trainer/main/community/gemeinschaft-test.json' },
+    { name: 'README.md', type: 'file', download_url: 'https://raw.githubusercontent.com/Asadhutgu/schema-trainer/main/community/README.md' }]) }));
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ format: 'schema-trainer-import', schemata: [
+    { datei: 'gemeinschaft.js', herkunft: 'Testnutzerin', id: 'gemeinschaft-test', titel: 'Gemeinschaftsschema', gliederung: ['I.'], punkte: [{ ebene: 0, punkt: 'Erster Punkt' }] }] }) }));
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('[data-act="i-start"]');
+  await page.click('[data-act="i-start"]');
+  await page.waitForSelector('[data-act="i-github"]');
+  await page.click('[data-act="i-github"]');
+  await page.waitForSelector('.datei:has-text("Gemeinschaftsschema")');
+  check(!(await page.locator('.datei:has-text("Gemeinschaftsschema") input[type=checkbox]').isChecked()), 'Schema von GitHub ist zunächst nicht angekreuzt');
+  check((await txt('.datei:has-text("Gemeinschaftsschema")')).includes('von GitHub'), 'Herkunft „von GitHub“ wird angezeigt');
+  check(await page.locator('.datei').count() === 1, 'Nur JSON-Dateien aus dem Ordner werden angeboten');
+  await page.check('.datei:has-text("Gemeinschaftsschema") input[type=checkbox]');
+  await page.click('[data-act="i-ausfuehren"]');
+  await page.waitForSelector('.hinweisbox.ok');
+  check((await eigeneImSpeicher()).some(e => e.schema.id === 'gemeinschaft-test' && e.herkunft === 'Testnutzerin'), 'Schema von GitHub übernommen, Herkunft gespeichert');
+  await page.unroute('https://api.github.com/**');
+  await page.unroute('https://raw.githubusercontent.com/**');
   check(konsole.length === 0, 'Keine Fehler in der Browser-Konsole' + (konsole.length ? ': ' + konsole.join(' | ') : ''));
 
   await page.evaluate(() => localStorage.clear());
