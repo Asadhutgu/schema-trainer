@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-73",
   norm: "§§ 73 ff. StGB",
   titel: "Einziehung von Taterträgen",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["I.", "1.", "a)"],

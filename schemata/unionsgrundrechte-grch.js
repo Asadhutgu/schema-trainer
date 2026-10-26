@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "grch",
   norm: "Art. 51, 52 GRCh",
   titel: "Prüfung der Unionsgrundrechte",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Diskriminierungsverbot und Grundrechte",
   gliederung: ["I.", "1."],

@@ -137,8 +137,7 @@ function editorStart(vorlage, optionen){
   const o=optionen||{};
   const e={
     id:o.id||null, neu:!o.id, kopieVon:o.kopieVon||'', schritt:1,
-    // Rechtsgebiet: bei neuen Schemata mit dem auf der Startseite gewählten Gebiet vorbelegt
-    titel:'', norm:'', gruppe:'', gebiet:(!o.id&&typeof filterGebiet==='string')?filterGebiet:'', gliederung:GLIEDERUNGEN[0].zeichen.slice(),
+    titel:'', norm:'', gruppe:'', gebiet:'', gliederung:GLIEDERUNGEN[0].zeichen.slice(),
     punkte:[], offen:-1, befunde:null, rueckgaengig:null, entwurfHinweis:'', loeschenArmiert:false
   };
   if(vorlage){
@@ -330,7 +329,7 @@ function speichereEditor(){
   else eintraege.push({schema:s, erstellt:jetzt, geaendert:jetzt, herkunft:''});
   if(!speichere()){ renderEditor(); return; }
   entwurfLoeschen();
-  bereiteSchemataVor();
+  bereiteSchemataVor(); waehleTab('eigene');
   const neu=byId(s.id);
   state=null; renderView(neu); window.scrollTo(0,0);
   meldung(alt?'Schema gespeichert.':'Schema angelegt. Es steht jetzt in der Übersicht und kann abgefragt werden.');
@@ -338,7 +337,7 @@ function speichereEditor(){
 function loescheSchema(id){
   const i=eintraege.findIndex(x=>x.schema.id===id); if(i<0) return;
   eintraege.splice(i,1); speichere(); entwurfLoeschen();
-  bereiteSchemataVor(); state=null; renderHome(); window.scrollTo(0,0);
+  bereiteSchemataVor(); waehleTab('eigene'); state=null; renderHome(); window.scrollTo(0,0);
   meldung('Schema gelöscht.'+(byId(id)?' Das mitgelieferte Original wird wieder angezeigt.':''));
 }
 // Erfolgsmeldung oben in der Ansicht einblenden
@@ -457,7 +456,7 @@ function importAusfuehren(){
     n++; namen.push(s.titel);
   });
   if(!speichere()){ renderImport(); return; }
-  bereiteSchemataVor(); state=null; renderHome(); window.scrollTo(0,0);
+  bereiteSchemataVor(); waehleTab('eigene'); state=null; renderHome(); window.scrollTo(0,0);
   meldung(n===1?'Ein Schema importiert: '+namen[0]+'.':n+' Schemata importiert: '+namen.join(', ')+'.');
 }
 
@@ -490,7 +489,7 @@ function exportDaten(){
     const out={datei:s.id+'.js'};
     const h=herkunft||(ei&&ei.herkunft)||'';
     if(h) out.herkunft=h;
-    ['id','norm','titel','gebiet','gruppe','gliederung','punkte'].forEach(k=>{ if(r[k]!==undefined) out[k]=r[k]; });
+    ['id','norm','titel','bereich','gebiet','gruppe','gliederung','punkte'].forEach(k=>{ if(r[k]!==undefined) out[k]=r[k]; });
     return out;
   });
   if(!schemata.length) return null;
@@ -535,22 +534,22 @@ function werkzeuge(){
     <button class="btn" data-act="x-start">Exportieren</button>
   </section>
   <p class="werkzeuge-hinweis">${nurEigene
-    ?'Hier siehst du nur deine eigenen Schemata. <a href="index.html">Zu den mitgelieferten Europarecht-Schemata</a>.'
-    :'Eigene Schemata erscheinen in der Übersicht neben den mitgelieferten. <a href="eigene.html">Leere Umgebung nur mit eigenen Schemata</a>.'}</p>`;
+    ?'Hier siehst du nur deine eigenen Schemata. <a href="index.html">Zu den fertigen Schemata</a>.'
+    :'Deine Schemata bleiben in diesem Browser gespeichert; zum Sichern oder Weitergeben „Exportieren“. <a href="eigene.html">Leere Umgebung nur mit eigenen Schemata</a>.'}</p>`;
 }
 // Startseite ohne ein einziges Schema (eigene.html, solange noch nichts angelegt ist)
 function leerHinweis(){
   return `<section class="leer">
-    <h2>Deine eigene Umgebung</h2>
+    <h2>${window.NUR_EIGENE?'Deine eigene Umgebung':'Eigene Schemata'}</h2>
     <p>Hier ist noch kein Schema. Lege dein erstes Prüfungsschema an: zuerst den Aufbau, dann die Definitionen. Oder importiere Schemata, die jemand mit dir geteilt hat. Alles wird nur in diesem Browser gespeichert.</p>
     <div class="actions"><button class="btn primary" data-act="e-start">Erstes Schema anlegen</button><button class="btn" data-act="i-start">Importieren</button></div>
-    <p class="werkzeuge-hinweis">${window.NUR_EIGENE?'Die mitgelieferten Europarecht-Schemata findest du unter <a href="index.html">index.html</a>.':''}</p>
+    <p class="werkzeuge-hinweis">${window.NUR_EIGENE?'Die fertigen Schemata findest du unter <a href="index.html">index.html</a>.':''}</p>
   </section>`;
 }
 // Zusatz für die Schema-Karte auf der Startseite
 function karteZusatz(s){
   if(!s.eigen) return {tag:'', hinweis:'', knopf:''};
-  return {tag:'<span class="tag">Eigenes Schema</span>', hinweis:s.ersetzt?' Deine Fassung ersetzt das mitgelieferte Schema.':'', knopf:`<button class="btn" data-act="e-bearbeiten" data-id="${esc(s.id)}">Bearbeiten</button>`};
+  return {tag:`<span class="tag">${s.ersetzt?'Eigene Fassung':'Eigenes Schema'}</span>`, hinweis:s.ersetzt?' Deine Fassung ersetzt das mitgelieferte Schema.':'', knopf:`<button class="btn" data-act="e-bearbeiten" data-id="${esc(s.id)}">Bearbeiten</button>`};
 }
 // Link in der Ansicht eines Schemas
 function ansichtLink(s){

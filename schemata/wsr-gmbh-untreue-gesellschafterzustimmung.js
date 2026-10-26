@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-gmbh-untreue",
   norm: "§ 266 StGB; § 30 GmbHG",
   titel: "GmbH-Untreue mit Gesellschafterzustimmung",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["1."],

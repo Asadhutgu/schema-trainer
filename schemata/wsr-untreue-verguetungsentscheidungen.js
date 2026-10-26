@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-untreue-verguetung",
   norm: "§ 266 StGB",
   titel: "Untreue bei Vergütungs- und Zuwendungsentscheidungen (Mannesmann / Betriebsrat / Sponsoring)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["1."],

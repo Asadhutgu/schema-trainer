@@ -1,6 +1,6 @@
 # Schema-Trainer
 
-Lern-App für juristische Prüfungsschemata im Stil des Kanals „Examensvorbereitung Öffentliches Recht“. Prüfungspunkte Schritt für Schritt aufbauen, Gliederungen ordnen und Definitionen im Karteikasten wiederholen. Mitgeliefert sind 57 Schemata aus zwei Rechtsgebieten: 19 zum Europarecht und 38 zum Wirtschaftsstrafrecht (FernUniversität in Hagen, Modul 55117). Oben auf der Startseite lässt sich das Rechtsgebiet wählen. Eigene Schemata lassen sich direkt in der App anlegen und mit anderen teilen.
+Lern-App für juristische Prüfungsschemata im Stil des Kanals „Examensvorbereitung Öffentliches Recht“. Prüfungspunkte Schritt für Schritt aufbauen, Gliederungen ordnen und Definitionen im Karteikasten wiederholen. Die Startseite hat zwei Reiter: „Fertige Schemata“ mit den mitgelieferten Inhalten, unterteilt nach Strafrecht, Öffentlichem Recht und Zivilrecht, und „Eigene Schemata“ für alles, was man selbst anlegt oder importiert. Mitgeliefert sind 57 Schemata: 38 zum Wirtschaftsstrafrecht (Strafrecht; FernUniversität in Hagen, Modul 55117) und 19 zum Europarecht (Öffentliches Recht). Eigene Schemata lassen sich direkt in der App anlegen und mit anderen teilen.
 
 Die App läuft unter **https://asadhutgu.github.io/schema-trainer/**, die leere Umgebung nur mit eigenen Schemata unter https://asadhutgu.github.io/schema-trainer/eigene.html, die Prüfseite unter https://asadhutgu.github.io/schema-trainer/pruefen.html. Quellcode: https://github.com/Asadhutgu/schema-trainer.
 
@@ -15,14 +15,14 @@ Lernstand und eigene Schemata werden im jeweiligen Browser gespeichert. Am beste
 
 ## Eigene Schemata direkt in der App anlegen
 
-Auf der Startseite steht „Neues Schema“. Der Editor führt in zwei Schritten durch das Anlegen:
+Im Reiter „Eigene Schemata“ steht „Neues Schema“. Der Editor führt in zwei Schritten durch das Anlegen:
 
 1. **Aufbau**: Titel, wahlweise Norm, Rechtsgebiet und Gruppe, Gliederungszeichen (zum Beispiel A. – I. – 1. – a)) und die Prüfungspunkte. Jede Zeile ist ein Punkt; mit den Pfeilen wird ein Punkt zum Unterpunkt oder wieder zum Hauptpunkt und wandert in der Reihenfolge nach oben oder unten, Unterpunkte wandern mit. Enter legt den nächsten Punkt an. Wer eine Gliederung schon als Text hat, fügt sie über „Mehrere Punkte einfügen“ auf einmal ein (eine Zeile je Punkt, Unterpunkte eingerückt).
 2. **Definitionen**: Zu jedem Prüfungspunkt kann eine Definition hinterlegt werden (Begriff, Text, wahlweise Fundstelle), die automatisch zur Karteikarte wird. Ein Punkt kann außerdem auf ein anderes Schema verweisen.
 
-Vor dem Speichern prüft die App das Schema mit denselben Regeln wie die Prüfseite und erklärt jeden Fehler mit einem Tipp. Gespeicherte Schemata erscheinen in der Übersicht mit dem Kennzeichen „Eigenes Schema“ und lassen sich wie die mitgelieferten abfragen, ordnen und im Karteikasten wiederholen. „Bearbeiten“ öffnet den Editor erneut; dort lässt sich ein Schema auch löschen. Ein angefangener Entwurf bleibt erhalten, auch wenn man die Seite zwischendurch verlässt.
+Vor dem Speichern prüft die App das Schema mit denselben Regeln wie die Prüfseite und erklärt jeden Fehler mit einem Tipp. Gespeicherte Schemata erscheinen im Reiter „Eigene Schemata“ und lassen sich wie die mitgelieferten abfragen, ordnen und im Karteikasten wiederholen. „Bearbeiten“ öffnet den Editor erneut; dort lässt sich ein Schema auch löschen. Ein angefangener Entwurf bleibt erhalten, auch wenn man die Seite zwischendurch verlässt.
 
-Mitgelieferte Schemata lassen sich anpassen: In der Ansicht eines Schemas führt „Als eigene Fassung bearbeiten“ in den Editor. Die eigene Fassung ersetzt das Original in der Übersicht, der Lernstand bleibt erhalten; wird sie gelöscht, erscheint wieder das Original.
+Mitgelieferte Schemata lassen sich anpassen: In der Ansicht eines Schemas führt „Als eigene Fassung bearbeiten“ in den Editor. Die eigene Fassung steht danach unter „Eigene Schemata“ und zugleich an der Stelle des Originals unter „Fertige Schemata“ (gekennzeichnet als „Eigene Fassung“); der Lernstand bleibt erhalten, und wird die Fassung gelöscht, erscheint wieder das Original.
 
 ## Leere Umgebung nur mit eigenen Schemata (eigene.html)
 
@@ -30,7 +30,7 @@ Wer den Trainer für ein anderes Rechtsgebiet nutzen will, öffnet `eigene.html`
 
 ## Schemata teilen: Exportieren und Importieren
 
-„Exportieren“ schreibt ausgewählte Schemata in eine Datei (Endung `.json`), die sich per Nachricht oder E-Mail weitergeben lässt; alternativ als Text kopieren oder am Handy direkt teilen. „Importieren“ liest solche Dateien ein, auch eingefügt als Text, und zeigt vor dem Übernehmen, was in der Datei steckt und ob Kennungen mit vorhandenen Schemata zusammenstoßen. Einzelheiten und das Dateiformat: `docs/import-export.md`.
+Im Reiter „Eigene Schemata“: „Exportieren“ schreibt ausgewählte Schemata in eine Datei (Endung `.json`), die sich per Nachricht oder E-Mail weitergeben lässt; alternativ als Text kopieren oder am Handy direkt teilen. „Importieren“ liest solche Dateien ein, auch eingefügt als Text, und zeigt vor dem Übernehmen, was in der Datei steckt und ob Kennungen mit vorhandenen Schemata zusammenstoßen. Einzelheiten und das Dateiformat: `docs/import-export.md`.
 
 Die Export-Datei eignet sich auch als Sicherung der eigenen Schemata und zum Übertragen zwischen Handy und PC.
 

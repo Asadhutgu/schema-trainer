@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-291",
   norm: "§ 291 Abs. 1 Nr. 3 StGB",
   titel: "Lohnwucher",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["I.", "1.", "a)", "aa)"],

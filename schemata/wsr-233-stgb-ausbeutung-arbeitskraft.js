@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-233",
   norm: "§ 233 Abs. 1 StGB",
   titel: "Ausbeutung der Arbeitskraft",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["I.", "1.", "a)", "aa)"],

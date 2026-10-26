@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-130",
   norm: "§ 130 OWiG",
   titel: "Verletzung der Aufsichtspflicht",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["I.", "1.", "a)"],

@@ -27,8 +27,10 @@
   'use strict';
 
   const GLIEDERUNG = ['A.', 'I.', '1.', 'a)', 'aa)'];
+  // Reiter der Startseite für fertige Schemata (Feld "bereich")
+  const BEREICHE = ['Strafrecht', 'Öffentliches Recht', 'Zivilrecht'];
   const FELDER = {
-    schema: ['id', 'norm', 'titel', 'gliederung', 'punkte', 'gruppe', 'gebiet'],
+    schema: ['id', 'norm', 'titel', 'gliederung', 'punkte', 'bereich', 'gebiet', 'gruppe'],
     punkt: ['ebene', 'punkt', 'definition', 'verweis'],
     definition: ['begriff', 'text', 'quelle', 'id']
   };
@@ -207,9 +209,15 @@
       pruefeFelder(Object.keys(s), FELDER.schema, datei, 'Schema');
       for (const feld of pflichtSchema) if (s[feld] === undefined) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ fehlt.', 'Pflichtfelder: ' + pflichtSchema.join(', ') + '.');
       if (eigene && !istText(s.norm)) hinweis(datei, 'Schema', 'Keine Norm angegeben.', 'Freiwillig. Die Norm erscheint in Gold über dem Titel, zum Beispiel „Art. 34 AEUV“ oder „§ 823 Abs. 1 BGB“.');
-      for (const feld of ['id', 'norm', 'titel', 'gruppe', 'gebiet']) {
+      for (const feld of ['id', 'norm', 'titel', 'bereich', 'gebiet', 'gruppe']) {
         if (eigene && feld === 'norm' && (s[feld] === undefined || s[feld] === '')) continue;
         if (s[feld] !== undefined && !istText(s[feld])) fehler(datei, 'Schema', 'Das Feld „' + feld + '“ muss ein Text in Anführungszeichen sein und darf nicht leer sein.');
+      }
+
+      // Mitgelieferte Schemata brauchen einen Bereich, damit sie auf der Startseite im richtigen Reiter stehen
+      if (!eigene) {
+        if (!istText(s.bereich)) hinweis(datei, 'Schema', 'Kein Bereich angegeben.', 'Die Startseite ordnet fertige Schemata nach bereich: "Strafrecht", "Öffentliches Recht" oder "Zivilrecht". Ohne Angabe erscheint das Schema unter „Weitere Schemata“.');
+        else if (!BEREICHE.includes(s.bereich.trim())) hinweis(datei, 'Schema', 'Der Bereich „' + s.bereich + '“ ist keiner der drei Reiter der Startseite.', 'Üblich sind "Strafrecht", "Öffentliches Recht" und "Zivilrecht"; ein anderer Wert bekommt einen eigenen Reiter.');
       }
 
       if (istText(s.id)) {
@@ -306,5 +314,5 @@
     return { befunde, statistik };
   }
 
-  root.SchemaPruefung = { pruefen, erklaere, GLIEDERUNG, LISTE, DATEINAME, slug };
+  root.SchemaPruefung = { pruefen, erklaere, GLIEDERUNG, BEREICHE, LISTE, DATEINAME, slug };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-begriffe-ke3",
   norm: "§ 331 HGB; § 26 BörsG; Art. 7 MAR; § 143 MarkenG",
   titel: "Begriffe: Bilanz-, Kapitalmarkt- und Markenstrafrecht (KE 3)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["1.", "a)", "aa)"],

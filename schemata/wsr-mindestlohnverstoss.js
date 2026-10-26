@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-mindestlohn",
   norm: "§§ 20, 21 MiLoG; §§ 266a, 291, 233 StGB",
   titel: "Mindestlohnverstoß im Gutachten",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["1."],

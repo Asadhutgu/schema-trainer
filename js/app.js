@@ -35,7 +35,7 @@ function bereiteSchemataVor(){
   const roh=mitgelieferte.filter(r=>!eigeneIds.has(r.id)).map(r=>[r,false]).concat(eigene.map(r=>[r,true]));
   SCHEMAS=roh
     .map(([r,eigen])=>({
-      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', gebiet:typeof r.gebiet==='string'?r.gebiet.trim():'', numbering:r.gliederung,
+      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', gebiet:typeof r.gebiet==='string'?r.gebiet.trim():'', bereich:typeof r.bereich==='string'?r.bereich.trim():'', numbering:r.gliederung,
       roh:r, eigen, ersetzt:eigen&&ersetzt.has(r.id),
       steps:r.punkte.filter(p=>p&&typeof p==='object').map(p=>({
         l:Number.isInteger(p.ebene)&&p.ebene>=0?p.ebene:0, t:String(p.punkt||''), ref:typeof p.verweis==='string'?p.verweis.trim():'',
@@ -66,18 +66,31 @@ let store={cards:{},scores:{}};
 try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{}};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 function card(cid){return store.cards[cid]||{box:0,due:0};}
-// Ansicht: gewähltes Rechtsgebiet auf der Startseite (Feld "gebiet"); '' = alle
+// Ansicht der Startseite: Reiter "fertig" (mitgelieferte Schemata, unterteilt nach Bereich: Strafrecht,
+// Öffentliches Recht, Zivilrecht) oder "eigene" (selbst angelegte und importierte Schemata). Wird im Browser gemerkt.
 const KEY_ANSICHT='schematrainer:ansicht:v1';
-let filterGebiet='';
-try{const a=JSON.parse(localStorage.getItem(KEY_ANSICHT)||'{}'); if(typeof a.gebiet==='string') filterGebiet=a.gebiet;}catch(e){}
-function merkeAnsicht(){try{localStorage.setItem(KEY_ANSICHT,JSON.stringify({gebiet:filterGebiet}));}catch(e){}}
-// Rechtsgebiete in Reihenfolge des ersten Auftretens; Filter nur sinnvoll, wenn es mindestens zwei gibt
-function gebiete(){const out=[];SCHEMAS.forEach(s=>{if(s.gebiet&&!out.includes(s.gebiet))out.push(s.gebiet);});return out;}
-// Schemata, die zur gewählten Ansicht gehören. Schemata ohne Rechtsgebiet erscheinen immer.
+const BEREICHE=['Strafrecht','Öffentliches Recht','Zivilrecht'];
+let ansicht={tab:'fertig', bereich:BEREICHE[0]};
+try{const a=JSON.parse(localStorage.getItem(KEY_ANSICHT)||'{}'); if(a.tab==='eigene') ansicht.tab='eigene'; if(typeof a.bereich==='string'&&a.bereich) ansicht.bereich=a.bereich;}catch(e){}
+function merkeAnsicht(){try{localStorage.setItem(KEY_ANSICHT,JSON.stringify(ansicht));}catch(e){}}
+function waehleTab(t){ansicht.tab=t==='eigene'?'eigene':'fertig'; merkeAnsicht();}
+// Fertige Schemata: die mitgelieferten; eine eigene Fassung mit derselben id steht an der Stelle des Originals.
+// Eigene Schemata: alles, was in der App angelegt oder importiert wurde (auch eigene Fassungen).
+function fertige(){return SCHEMAS.filter(s=>!s.eigen||s.ersetzt);}
+function eigene(){return SCHEMAS.filter(s=>s.eigen);}
+// Bereiche der fertigen Schemata: die drei festen Reiter zuerst, dann weitere Werte aus den Dateien; '' = ohne Bereich
+function bereiche(){
+  const out=BEREICHE.slice();
+  fertige().forEach(s=>{const b=s.bereich||''; if(!out.includes(b)) out.push(b);});
+  return out;
+}
+function aktiverTab(){return window.NUR_EIGENE?'eigene':ansicht.tab;}
+function aktiverBereich(){const b=bereiche(); return b.includes(ansicht.bereich)?ansicht.bereich:b[0];}
+// Schemata der gerade gewählten Ansicht; Fälligkeitszahl und "Wiederholen" beziehen sich darauf
 function sichtbar(){
-  const g=gebiete();
-  if(!filterGebiet||g.length<2||!g.includes(filterGebiet)) return SCHEMAS;
-  return SCHEMAS.filter(s=>!s.gebiet||s.gebiet===filterGebiet);
+  if(aktiverTab()==='eigene') return eigene();
+  const b=aktiverBereich();
+  return fertige().filter(s=>(s.bereich||'')===b);
 }
 
 /* ---------- Helfer ---------- */
@@ -120,28 +133,36 @@ function gruppiert(liste){
     nachName.get(n).schemas.push(s);
   });
   const ohne=nachName.get('');
-  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name='Weitere Schemata';out.push(ohne);}
   return out;
 }
-// Abschnitte der Startseite: je Rechtsgebiet (Feld "gebiet") ein Abschnitt mit seinen Gruppen; ohne Rechtsgebiet zuletzt.
-// Zwischenüberschriften für Rechtsgebiete gibt es nur, wenn mehr als eines sichtbar ist.
-function abschnitte(){
-  const liste=sichtbar(), out=[], nachGebiet=new Map();
+// Abschnitte einer Liste: je Rechtsgebiet (Feld "gebiet") ein Abschnitt mit seinen Gruppen; ohne Rechtsgebiet zuletzt.
+// immerUeberschrift: Zwischenüberschrift auch bei nur einem Rechtsgebiet (Reiter der fertigen Schemata)
+function abschnitte(liste, immerUeberschrift){
+  const out=[], nachGebiet=new Map();
   liste.forEach(s=>{
     const g=s.gebiet||'';
     if(!nachGebiet.has(g)){const a={gebiet:g,schemas:[]};nachGebiet.set(g,a);out.push(a);}
     nachGebiet.get(g).schemas.push(s);
   });
   const ohne=nachGebiet.get('');
-  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.gebiet=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
-  const mitUeberschrift=out.length>1;
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.gebiet='Weitere Schemata';out.push(ohne);}
+  const mitUeberschrift=out.length>1||(immerUeberschrift&&out.length===1&&!!out[0].gebiet);
   return out.map(a=>({gebiet:mitUeberschrift?a.gebiet:'',gruppen:gruppiert(a.schemas)}));
 }
-function filterHtml(){
-  const g=gebiete(); if(g.length<2) return '';
-  const aktiv=g.includes(filterGebiet)?filterGebiet:'';
-  const chip=(wert,text)=>`<button class="chipf${wert===aktiv?' aktiv':''}" data-act="gebiet" data-g="${esc(wert)}" aria-pressed="${wert===aktiv}">${esc(text)}</button>`;
-  return `<nav class="filter" aria-label="Rechtsgebiet">${chip('','Alle Gebiete')}${g.map(x=>chip(x,x)).join('')}</nav>`;
+function abschnitteHtml(liste, immerUeberschrift){
+  return abschnitte(liste, immerUeberschrift).map(a=>`${a.gebiet?`<h2 class="gebiet">${esc(a.gebiet)}</h2>`:''}${a.gruppen.map(g=>`${g.name?`<${a.gebiet?'h3':'h2'} class="gruppe">${esc(g.name)}</${a.gebiet?'h3':'h2'}>`:''}${g.schemas.map(karte).join('')}`).join('')}`).join('');
+}
+// Reiterleiste: oben "Fertige Schemata" / "Eigene Schemata", darunter die Bereiche der fertigen Schemata
+function reiter(liste, aktiv, act, klasse, label){
+  return `<nav class="tabs ${klasse}" role="tablist" aria-label="${label}">${liste.map(([wert,text])=>`<button class="tab${wert===aktiv?' aktiv':''}" role="tab" aria-selected="${wert===aktiv}" data-act="${act}" data-w="${esc(wert)}">${esc(text)}</button>`).join('')}</nav>`;
+}
+function dueHtml(){
+  const due=dueCount();
+  return `<section class="due">
+    <div><strong>${due}</strong>${due===1?'Definition':'Definitionen'} fällig oder neu</div>
+    <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
+  </section>`;
 }
 function karte(s){
   const sc=store.scores[s.id], defs=s.steps.filter(x=>x.d).length;
@@ -161,22 +182,24 @@ function karte(s){
 }
 function renderHome(){
   state=null; verlauf=[];
-  const due=dueCount();
-  if(!SCHEMAS.length){
-    // Leere Umgebung (eigene.html ohne eigene Schemata): Einstieg statt leerer Liste
-    app.innerHTML=(ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:'')+Eigene.leerHinweis();
-    return;
+  const hinweis=ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:'';
+  const tab=aktiverTab();
+  let inhalt='';
+  if(tab==='eigene'){
+    // Eigene Schemata: Werkzeuge (Neu, Importieren, Exportieren) und die Liste; ohne eigene Schemata der Einstieg
+    const liste=eigene();
+    inhalt=liste.length?dueHtml()+Eigene.werkzeuge()+abschnitteHtml(liste,false):Eigene.leerHinweis();
+  }else{
+    // Fertige Schemata: Reiter je Bereich, darin Abschnitte je Rechtsgebiet und Gruppen
+    const b=aktiverBereich(), liste=sichtbar();
+    inhalt=reiter(bereiche().map(x=>[x,x||'Weitere Schemata']),b,'bereich','bereiche','Bereich')
+      +(liste.length?dueHtml()+abschnitteHtml(liste,true)
+        :`<section class="leer"><h2>${esc(b||'Weitere Schemata')}</h2><p>Hier sind noch keine fertigen Schemata enthalten. Du kannst eigene anlegen oder importierte verwenden; sie stehen unter „Eigene Schemata“.</p><div class="actions"><button class="btn primary" data-act="tab" data-w="eigene">Zu den eigenen Schemata</button></div></section>`);
   }
-  app.innerHTML=`
-  ${ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:''}
-  <p class="intro">Prüfungsschemata Schritt für Schritt aufbauen, Prüfungspunkte ordnen und Definitionen aktiv abrufen. Dein Lernstand wird in diesem Browser gespeichert.</p>
-  <section class="due">
-    <div><strong>${due}</strong>${due===1?'Definition':'Definitionen'} fällig oder neu</div>
-    <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
-  </section>
-  ${Eigene.werkzeuge()}
-  ${filterHtml()}
-  ${abschnitte().map(a=>`${a.gebiet?`<h2 class="gebiet">${esc(a.gebiet)}</h2>`:''}${a.gruppen.map(g=>`${g.name?`<${a.gebiet?'h3':'h2'} class="gruppe">${esc(g.name)}</${a.gebiet?'h3':'h2'}>`:''}${g.schemas.map(karte).join('')}`).join('')}`).join('')}`;
+  app.innerHTML=hinweis
+    +`<p class="intro">Prüfungsschemata Schritt für Schritt aufbauen, Prüfungspunkte ordnen und Definitionen aktiv abrufen. Dein Lernstand wird in diesem Browser gespeichert.</p>`
+    +(window.NUR_EIGENE?'':reiter([['fertig','Fertige Schemata'],['eigene','Eigene Schemata']],tab,'tab','haupt','Schemata'))
+    +inhalt;
 }
 
 /* ---------- Ansehen ---------- */
@@ -312,7 +335,8 @@ document.addEventListener('click',e=>{
       const list=faelligeKarten().sort((a,b2)=>card(a.cid).box-card(b2.cid).box).slice(0,20);
       startCards(list); window.scrollTo(0,0); break;
     }
-    case 'gebiet': filterGebiet=b.dataset.g||''; merkeAnsicht(); renderHome(); break;
+    case 'tab': waehleTab(b.dataset.w); renderHome(); window.scrollTo(0,0); break;
+    case 'bereich': ansicht.bereich=b.dataset.w||''; ansicht.tab='fertig'; merkeAnsicht(); renderHome(); break;
     case 'flip': {const t=document.getElementById('mine'); state.mine=t?t.value.trim():''; state.revealed=true; renderCards(); break;}
     case 'rateCard': rateCard(+b.dataset.v); break;
     case 'reset':

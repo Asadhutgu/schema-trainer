@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-264",
   norm: "§ 264 StGB",
   titel: "Subventionsbetrug",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)", "aa)"],

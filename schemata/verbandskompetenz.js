@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "vk",
   norm: "Art. 5 EUV",
   titel: "Verbandskompetenz der Union",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Grundlagen",
   gliederung: ["1."],

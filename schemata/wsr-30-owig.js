@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-30",
   norm: "§ 30 OWiG",
   titel: "Verbandsgeldbuße",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["I.", "1.", "a)"],

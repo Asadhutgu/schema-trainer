@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-auslaenderbeschaeftigung",
   norm: "§ 404 SGB III; § 98 AufenthG; §§ 10, 10a, 11 SchwarzArbG; §§ 15, 15a AÜG",
   titel: "Illegale Ausländerbeschäftigung (Prüfreihenfolge)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["1."],

@@ -46,8 +46,8 @@ Die Datei ist eine Textdatei im JSON-Format. Sie enthält dieselben Felder wie e
       "id": "verfassungsbeschwerde",
       "norm": "Art. 94 Abs. 1 Nr. 4a GG",
       "titel": "Verfassungsbeschwerde",
-      "gebiet": "Öffentliches Recht",
-      "gruppe": "Staatsrecht",
+      "gebiet": "Staatsrecht",
+      "gruppe": "Grundrechte",
       "gliederung": ["A.", "I.", "1.", "a)"],
       "punkte": [
         { "ebene": 0, "punkt": "Zulässigkeit" },
@@ -64,6 +64,8 @@ Die Datei ist eine Textdatei im JSON-Format. Sie enthält dieselben Felder wie e
   ]
 }
 ```
+
+Das Feld `bereich` („Strafrecht“, „Öffentliches Recht“, „Zivilrecht“) ist nur für die mitgelieferten Schemata nötig; importierte Schemata stehen immer im Reiter „Eigene Schemata“.
 
 Beim Import werden außer dieser Form auch eine einfache Liste `[ {…}, {…} ]` und ein einzelnes Schema `{ "id": …, "punkte": … }` angenommen.
 

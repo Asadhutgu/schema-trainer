@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-genehmigung",
   norm: "Verwaltungsakzessorietät",
   titel: "Behördliche Genehmigung im Gutachten",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1."],

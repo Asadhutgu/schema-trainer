@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "nk",
   norm: "Art. 263 AEUV",
   titel: "Nichtigkeitsklage",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I.", "1.", "a)", "aa)"],

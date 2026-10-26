@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-15-aueg",
   norm: "§ 15 Abs. 1 AÜG",
   titel: "Illegaler Verleih ausländischer Arbeitnehmer",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["I.", "1.", "a)", "aa)"],

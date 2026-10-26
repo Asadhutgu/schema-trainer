@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-265",
   norm: "§ 265 StGB",
   titel: "Versicherungsmissbrauch",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)"],

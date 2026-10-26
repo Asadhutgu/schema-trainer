@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-14",
   norm: "§ 14 StGB / § 9 OWiG",
   titel: "Handeln für einen anderen",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["I.", "1.", "a)", "aa)"],

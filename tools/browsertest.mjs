@@ -51,15 +51,31 @@ async function szenario(browser, basis, name) {
   console.log(`\n${name}`);
   // Sauberer Start
   await page.goto(basis + 'index.html');
-  await page.waitForSelector('article.schema');
+  await page.waitForSelector('.intro');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('article.schema');
 
-  // 1. Startseite (Zahl der mitgelieferten Schemata aus schemata/liste.js)
-  const anzahl = await page.evaluate(() => window.SCHEMA_DATEIEN.length);
-  check(await karten() === anzahl, anzahl + ' mitgelieferte Schemata');
-  for (const act of ['e-start', 'i-start', 'x-start']) check(await page.locator(`[data-act="${act}"]`).count() === 1, 'Knopf ' + act + ' vorhanden');
+  // 1. Startseite: Reiter "Fertige Schemata" mit Bereichen, Reiter "Eigene Schemata"
+  const jeBereich = await page.evaluate(() => { const m = {}; SCHEMAS.filter(s => !s.eigen).forEach(s => { m[s.bereich || ''] = (m[s.bereich || ''] || 0) + 1; }); return m; });
+  check(await page.getAttribute('.tabs.haupt .tab.aktiv', 'data-w') === 'fertig', 'Reiter „Fertige Schemata“ ist vorausgewählt');
+  check(await page.locator('.tabs.bereiche .tab').count() >= 3, 'Mindestens drei Bereichsreiter vorhanden');
+  check(await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w') === 'Strafrecht', 'Bereich „Strafrecht“ ist vorausgewählt');
+  check(await karten() === (jeBereich['Strafrecht'] || 0), 'Strafrecht zeigt seine ' + (jeBereich['Strafrecht'] || 0) + ' Schemata');
+  await page.click('.tabs.bereiche .tab[data-w="Öffentliches Recht"]');
+  await page.waitForSelector('.tabs.bereiche .tab.aktiv[data-w="Öffentliches Recht"]');
+  check(await karten() === (jeBereich['Öffentliches Recht'] || 0), 'Öffentliches Recht zeigt seine ' + (jeBereich['Öffentliches Recht'] || 0) + ' Schemata');
+  check(await page.locator('h2.gebiet', { hasText: 'Europarecht' }).count() === 1, 'Überschrift „Europarecht“ im Bereich');
+  await page.reload();
+  await page.waitForSelector('.tabs.bereiche');
+  check(await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w') === 'Öffentliches Recht', 'Gewählter Bereich bleibt nach Neuladen');
+  await page.click('.tabs.bereiche .tab[data-w="Zivilrecht"]');
+  await page.waitForSelector('.leer');
+  check((await txt('.leer')).includes('noch keine fertigen Schemata'), 'Zivilrecht zeigt den Hinweis auf fehlende Schemata');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('.leer [data-act="e-start"]');
+  check((await txt('.leer h2')).includes('Eigene Schemata'), 'Reiter „Eigene Schemata“ ohne eigene Schemata zeigt den Einstieg');
+  for (const act of ['e-start', 'i-start']) check(await page.locator(`[data-act="${act}"]`).count() === 1, 'Knopf ' + act + ' vorhanden');
 
   // 2. Editor Schritt 1: Aufbau
   await page.click('[data-act="e-start"]');
@@ -131,29 +147,18 @@ async function szenario(browser, basis, name) {
   check(gespeichert[0].schema.punkte[4].definition.id === 'beschwerdefahigkeit-2', 'Doppelter Begriff bekam eigene Kennung');
   check(await page.evaluate(() => localStorage.getItem('schematrainer:entwurf:v1')) === null, 'Entwurf nach Speichern gelöscht');
 
-  // 4. Startseite und Lernmodi mit dem eigenen Schema
+  // 4. Reiter "Eigene Schemata" nach dem Speichern, Lernmodi mit dem eigenen Schema
   await page.click('[data-act="home"]');
   await page.waitForSelector('article.schema');
-  check(await karten() === anzahl + 1, (anzahl + 1) + ' Schemata auf der Startseite');
+  check(await page.getAttribute('.tabs.haupt .tab.aktiv', 'data-w') === 'eigene', 'Nach dem Speichern ist der Reiter „Eigene Schemata“ aktiv');
+  check(await karten() === 1, 'Ein eigenes Schema im Reiter');
   check(await page.locator('.gruppe', { hasText: 'Staatsrecht' }).count() === 1, 'Gruppe „Staatsrecht“ erscheint');
-  // Filter nach Rechtsgebiet (nur, wenn es mindestens zwei gibt)
-  const gebieteListe = await page.evaluate(() => gebiete());
-  if (gebieteListe.length >= 2) {
-    check(await page.locator('.filter .chipf').count() === gebieteListe.length + 1, 'Ein Filterknopf je Rechtsgebiet plus „Alle Gebiete“');
-    check(await page.locator('h2.gebiet').count() === gebieteListe.length, 'Je Rechtsgebiet eine Abschnittsüberschrift');
-    const g = gebieteListe[gebieteListe.length - 1];
-    await page.click(`.filter .chipf[data-g="${g}"]`);
-    await page.waitForSelector(`.chipf.aktiv[data-g="${g}"]`);
-    const erwartet = await page.evaluate(g2 => SCHEMAS.filter(s => !s.gebiet || s.gebiet === g2).length, g);
-    check(await karten() === erwartet, 'Filter zeigt nur das gewählte Rechtsgebiet');
-    check(await page.locator('h2.gebiet').count() === 0, 'Ohne zweites Gebiet keine Abschnittsüberschrift');
-    await page.reload();
-    await page.waitForSelector('article.schema');
-    check(await page.getAttribute('.chipf.aktiv', 'data-g') === g, 'Gewähltes Rechtsgebiet bleibt nach Neuladen');
-    await page.click('.filter .chipf[data-g=""]');
-    await page.waitForSelector('.chipf.aktiv[data-g=""]');
-    check(await karten() === anzahl + 1, 'Alle Gebiete wieder sichtbar');
-  } else check(await page.locator('.filter').count() === 0, 'Kein Filter bei nur einem Rechtsgebiet');
+  check(await page.locator('[data-act="x-start"]').count() === 1, 'Knopf „Exportieren“ im Reiter vorhanden');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
+  await page.waitForSelector('.tabs.bereiche');
+  check(await page.locator('article.schema.eigen').count() === 0, 'Eigenes Schema erscheint nicht unter den fertigen');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('article.schema.eigen');
   check(await page.locator('article.schema.eigen .tag', { hasText: 'Eigenes Schema' }).count() === 1, 'Kennzeichen „Eigenes Schema“');
   await page.click('article.schema.eigen [data-act="build"]');
   await page.click('[data-act="reveal"]');
@@ -212,7 +217,7 @@ async function szenario(browser, basis, name) {
   await page.selectOption('select[data-wahl="0"]', 'kopie');
   await page.click('[data-act="i-ausfuehren"]');
   await page.waitForSelector('.hinweisbox.ok');
-  check(await karten() === anzahl + 2, (anzahl + 2) + ' Schemata nach Import als Kopie');
+  check(await karten() === 2, 'Zwei eigene Schemata nach Import als Kopie');
   check((await eigeneImSpeicher()).some(e => e.schema.id === 'verfassungsbeschwerde-2'), 'Kopie bekam id verfassungsbeschwerde-2');
 
   // 8. Import einer Schema-Datei (.js), Konflikt zu mitgeliefertem Schema, Original ersetzen
@@ -224,8 +229,16 @@ async function szenario(browser, basis, name) {
   await page.selectOption('select[data-wahl="0"]', 'ersetzen');
   await page.click('[data-act="i-ausfuehren"]');
   await page.waitForSelector('.hinweisbox.ok');
-  check(await karten() === anzahl + 2, 'Ersetzen: weiterhin ' + (anzahl + 2) + ' Schemata');
+  check(await karten() === 3, 'Eigene Fassung erscheint als drittes eigenes Schema');
   check(await page.locator('article.schema', { hasText: 'Deine Fassung ersetzt' }).count() === 1, 'Hinweis „Deine Fassung ersetzt das mitgelieferte Schema“');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
+  await page.waitForSelector('.tabs.bereiche');
+  await page.click('.tabs.bereiche .tab[data-w="Öffentliches Recht"]');
+  await page.waitForSelector('.tabs.bereiche .tab.aktiv[data-w="Öffentliches Recht"]');
+  check(await karten() === (jeBereich['Öffentliches Recht'] || 0), 'Fertige Schemata: Zahl unverändert, eigene Fassung steht an der Stelle des Originals');
+  check(await page.locator('article.schema.eigen', { hasText: 'Warenverkehrsfreiheit' }).count() === 1, 'Eigene Fassung der Warenverkehrsfreiheit unter den fertigen Schemata gekennzeichnet');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('[data-act="i-start"]');
 
   // 9. Fehlerhafte Importe
   await page.click('[data-act="i-start"]');
@@ -286,8 +299,11 @@ async function szenario(browser, basis, name) {
 
   // 14. index.html ohne eigene Schemata
   await page.goto(basis + 'index.html');
+  await page.waitForSelector('.tabs.haupt');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
   await page.waitForSelector('article.schema');
-  check(await karten() === anzahl, 'Wieder ' + anzahl + ' Schemata');
+  const aktiv = await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w');
+  check(await karten() === (jeBereich[aktiv] || 0), 'Fertige Schemata wieder vollständig (' + aktiv + ')');
   check(konsole.length === 0, 'Keine Fehler in der Browser-Konsole' + (konsole.length ? ': ' + konsole.join(' | ') : ''));
 
   await page.evaluate(() => localStorage.clear());

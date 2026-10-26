@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-299",
   norm: "§ 299 Abs. 1 StGB",
   titel: "Bestechlichkeit im geschäftlichen Verkehr",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["I.", "1.", "a)", "aa)"],

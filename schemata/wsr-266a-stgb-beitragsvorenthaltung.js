@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-266a",
   norm: "§ 266a Abs. 1 StGB",
   titel: "Vorenthalten von Arbeitsentgelt",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)"],

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-gremium",
   norm: "Kausalität",
   titel: "Kausalität bei Gremienentscheidungen",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1."],

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-331",
   norm: "§ 331 StGB",
   titel: "Vorteilsannahme",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["I.", "1.", "a)", "aa)"],

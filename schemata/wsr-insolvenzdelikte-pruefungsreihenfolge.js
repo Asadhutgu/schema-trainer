@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-krisendelikte",
   norm: "§ 15a InsO; §§ 283 ff. StGB",
   titel: "Insolvenzverschleppung und Begleitdelikte in der Krise (Prüfungsreihenfolge)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["1."],

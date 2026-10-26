@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-grundbegriffe-ke1",
   norm: "Allgemeiner Teil",
   titel: "Begriffe: Grundlagen und Deliktsaufbau im Wirtschaftsstrafrecht (KE 1)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1.", "a)", "aa)"],

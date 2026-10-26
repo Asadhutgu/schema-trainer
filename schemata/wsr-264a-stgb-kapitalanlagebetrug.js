@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-264a",
   norm: "§ 264a StGB",
   titel: "Kapitalanlagebetrug",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)"],
