@@ -177,8 +177,58 @@ async function szenario(browser, basis, name) {
   await page.waitForSelector('.chip');
   check(await page.locator('.chip').count() === 3, 'Ordnen zeigt drei Hauptpunkte');
 
-  // 5. Bearbeiten: Begriff umformulieren, Karten-Kennung bleibt
+  // 4b. Lückentext mit der eigenen Definition (zwei Lücken, Wörter zum Antippen)
   await page.click('[data-act="home"]');
+  await page.click('article.schema.eigen [data-act="cloze"]');
+  await page.waitForSelector('.lueckentext');
+  const luecken = await page.evaluate(() => state.queue[state.pos].luecken.map(l => l.wort));
+  check(luecken.length === 2, 'Lückentext: zwei Lücken');
+  check(await page.locator('.luecke.aktiv .luecke-eingabe').count() === 1, 'Eingabefeld in der markierten ersten Lücke');
+  check(await page.locator('.chip.wort').count() === 0, 'Am PC ist die Wortauswahl zunächst ausgeblendet');
+  await page.fill('.luecke-eingabe', 'xyzxyz');
+  await page.press('.luecke-eingabe', 'Enter');
+  check(await page.evaluate(() => state.fehler) === 1, 'Falsch getipptes Wort zählt als Fehlgriff');
+  await page.fill('.luecke-eingabe', luecken[0].toUpperCase());
+  await page.press('.luecke-eingabe', 'Enter');
+  await page.waitForSelector('.luecke.gefuellt');
+  check(await page.evaluate(() => state.gefuellt) === 1, 'Richtig getipptes Wort füllt die Lücke (Groß-/Kleinschreibung egal)');
+  await page.click('[data-act="lz-woerter"]');
+  await page.waitForSelector('.chip.wort');
+  check(await page.locator('.chip.wort').count() === luecken.length - 1, 'Wortauswahl zeigt nur die verbleibenden Wörter');
+  for (const w of luecken.slice(1)) await page.locator(`.chip.wort:text-is("${w}")`).first().click();
+  await page.waitForSelector('[data-act="lz-weiter"]');
+  check(await page.locator('.luecke.gefuellt').count() === luecken.length && (await page.locator('.card .src').count()) === 1, 'Alle Lücken gefüllt, Fundstelle erscheint');
+  await page.click('[data-act="lz-weiter"]');
+  // weitere Definitionen des Schemas: alle Lücken tippen
+  await page.waitForSelector('.lueckentext, .result');
+  while (await page.locator('.lueckentext').count()) {
+    const ws = await page.evaluate(() => state.queue[state.pos].luecken.map(l => l.wort));
+    for (const w of ws) { await page.fill('.luecke-eingabe', w); await page.press('.luecke-eingabe', 'Enter'); }
+    await page.waitForSelector('[data-act="lz-weiter"]');
+    await page.click('[data-act="lz-weiter"]');
+    await page.waitForSelector('.lueckentext, .result');
+  }
+  const gesamt = await page.evaluate(() => state.total);
+  check((await txt('.score')).trim() === `${gesamt} von ${gesamt}`, 'Lückentext-Ergebnis: alle ' + gesamt + ' Lücken richtig');
+  const lzStore = await page.evaluate(() => JSON.parse(localStorage.getItem('schematrainer:v1')).lueckentext);
+  check(!!(lzStore && lzStore.verfassungsbeschwerde && lzStore.verfassungsbeschwerde.richtig === gesamt), 'Lückentext-Ergebnis gespeichert');
+  // "Lösung zeigen" über alle Definitionen: nichts zählt als richtig
+  await page.click('[data-act="cloze"][data-id="verfassungsbeschwerde"]');
+  await page.waitForSelector('.lueckentext');
+  let erste = true;
+  while (await page.locator('.lueckentext').count()) {
+    const anzahlLuecken = await page.evaluate(() => state.queue[state.pos].luecken.length);
+    await page.click('[data-act="lz-loesung"]');
+    if (erste) { check(await page.locator('.luecke.aufgedeckt').count() === anzahlLuecken, '„Lösung zeigen“ deckt die Lücken auf'); erste = false; }
+    await page.click('[data-act="lz-weiter"]');
+    await page.waitForSelector('.lueckentext, .result');
+  }
+  check((await txt('.score')).trim() === `0 von ${gesamt}`, 'Aufgedeckte Lücken zählen nicht als richtig');
+  await page.click('[data-act="home"]');
+  await page.waitForSelector('article.schema.eigen');
+  check((await txt('article.schema.eigen .meta')).includes(`Lückentext 0 von ${gesamt}`), 'Schema-Karte zeigt das letzte Lückentext-Ergebnis');
+
+  // 5. Bearbeiten: Begriff umformulieren, Karten-Kennung bleibt (wir stehen schon auf der Startseite)
   await page.click('article.schema.eigen [data-act="e-bearbeiten"]');
   await page.waitForSelector('#e-titel');
   check((await txt('h2.title')).trim() === 'Schema bearbeiten', 'Editor für eigenes Schema');
