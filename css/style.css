@@ -152,6 +152,21 @@ footer p{margin:0;max-width:52ch;}
 .loesung{margin:.9rem 0 0;text-align:right;}
 .card .src{margin-top:.6rem;font-size:.82rem;color:var(--muted);font-style:italic;}
 
+/* ---------- Verschieben ---------- */
+.vitem{touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;}
+.chip.vitem.gewaehlt,.vslot .vitem.gewaehlt{border:1px solid var(--heading);background:var(--row);box-shadow:inset 0 0 0 1px var(--heading);}
+.vslot .vitem{font:inherit;text-align:left;background:none;border:0;padding:.1rem .2rem;margin:-.1rem -.2rem;border-radius:6px;color:inherit;width:calc(100% + .4rem);}
+.vslot[data-l="0"] .vitem{font-family:var(--serif);font-weight:700;color:var(--heading);font-size:1.05rem;}
+.vslot.leer .placeholder{display:block;border:1px dashed var(--line);border-radius:6px;padding:.25rem .6rem;min-height:1.9rem;font-style:normal;}
+.vslot.bereit{cursor:pointer;}
+.vslot.bereit .placeholder{border-color:var(--gold);color:var(--gold-ink);}
+.vslot.ziel{background:var(--row);box-shadow:inset 0 0 0 2px var(--gold);}
+.vslot.bad .txt{color:var(--bad);}
+.vslot .richtig{font-family:var(--sans);font-weight:400;font-size:.88rem;color:var(--ok);margin-top:.15rem;}
+.wird-gezogen{opacity:.35;}
+.vghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;max-width:70vw;margin:-1.4rem 0 0 -2rem;padding:.55rem .9rem;border-radius:8px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.18);font:inherit;font-size:.95rem;}
+.vorrat{margin-top:.25rem;}
+
 /* ---------- Hinweis in der App, wenn Schema-Dateien fehlen ---------- */
 .hinweisbox{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:.8rem 1.1rem;margin-bottom:1.25rem;}
 .hinweisbox a{color:var(--gold-ink);}

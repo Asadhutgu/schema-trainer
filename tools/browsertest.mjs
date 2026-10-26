@@ -228,6 +228,46 @@ async function szenario(browser, basis, name) {
   await page.waitForSelector('article.schema.eigen');
   check((await txt('article.schema.eigen .meta')).includes(`Lückentext 0 von ${gesamt}`), 'Schema-Karte zeigt das letzte Lückentext-Ergebnis');
 
+  // 4c. Verschieben: leeres Schema aus dem Vorrat füllen (antippen und ziehen)
+  await page.click('article.schema.eigen [data-act="move"]');
+  await page.waitForSelector('.outline.verschieben');
+  const nPunkte = await page.evaluate(() => state.s.steps.length);
+  check(await page.locator('.vslot').count() === nPunkte && await page.locator('.vorrat .vitem').count() === nPunkte, 'Verschieben: leere Stellen und Vorrat mit allen Punkten');
+  check(await page.locator('[data-act="v-auswerten"]').isDisabled(), 'Auswerten gesperrt, solange der Vorrat nicht leer ist');
+  await page.click('.vorrat .vitem[data-vitem="0"]');
+  check(await page.locator('.vorrat .vitem.gewaehlt').count() === 1, 'Angetippter Punkt ist markiert');
+  await page.click('.vslot[data-vslot="0"]');
+  check(await page.evaluate(() => state.slots[0] === 0), 'Punkt per Antippen abgelegt');
+  await page.click('.vorrat .vitem[data-vitem="2"]');
+  await page.click('.vslot[data-vslot="1"]');
+  await page.click('.vslot[data-vslot="1"] .vitem');
+  check(await page.evaluate(() => state.slots[1] === null && state.pool.includes(2) && state.gewaehlt === 2), 'Abgelegter Punkt kehrt durch Antippen in den Vorrat zurück und bleibt markiert');
+  await page.click('.vslot[data-vslot="2"]');
+  check(await page.evaluate(() => state.slots[2] === 2), 'Markierter Punkt an anderer Stelle abgelegt');
+  // Ziehen mit der Maus (Quelle und Ziel werden dabei in den sichtbaren Bereich gescrollt)
+  const quelleEl = page.locator('.vorrat .vitem[data-vitem="1"]');
+  await quelleEl.scrollIntoViewIfNeeded();
+  const quelle = await quelleEl.boundingBox();
+  await page.mouse.move(quelle.x + quelle.width / 2, quelle.y + quelle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(quelle.x + 40, quelle.y + 20, { steps: 5 });
+  await page.locator('.vslot[data-vslot="1"]').scrollIntoViewIfNeeded();
+  const ziel = await page.locator('.vslot[data-vslot="1"]').boundingBox();
+  await page.mouse.move(ziel.x + ziel.width / 2, ziel.y + ziel.height / 2, { steps: 10 });
+  await page.mouse.up();
+  check(await page.evaluate(() => state.slots[1] === 1), 'Punkt per Ziehen mit der Maus abgelegt');
+  check(await page.locator('.vghost').count() === 0 && await page.locator('.vorrat .vitem.gewaehlt').count() === 0, 'Nach dem Ziehen bleibt nichts markiert');
+  for (let i = 3; i < nPunkte; i++) { await page.click(`.vorrat .vitem[data-vitem="${i}"]`); await page.click(`.vslot[data-vslot="${i}"]`); }
+  await page.waitForSelector('[data-act="v-auswerten"]:not([disabled])');
+  await page.click('[data-act="v-auswerten"]');
+  await page.waitForSelector('.result');
+  check((await txt('.score')).trim() === `${nPunkte} von ${nPunkte}`, 'Verschieben: alle Punkte richtig');
+  const vStore = await page.evaluate(() => JSON.parse(localStorage.getItem('schematrainer:v1')).verschieben);
+  check(!!(vStore && vStore.verfassungsbeschwerde && vStore.verfassungsbeschwerde.richtig === nPunkte), 'Verschieben-Ergebnis gespeichert');
+  await page.click('[data-act="home"]');
+  await page.waitForSelector('article.schema.eigen');
+  check((await txt('article.schema.eigen .meta')).includes(`Verschieben ${nPunkte} von ${nPunkte}`), 'Schema-Karte zeigt das Verschieben-Ergebnis');
+
   // 5. Bearbeiten: Begriff umformulieren, Karten-Kennung bleibt (wir stehen schon auf der Startseite)
   await page.click('article.schema.eigen [data-act="e-bearbeiten"]');
   await page.waitForSelector('#e-titel');

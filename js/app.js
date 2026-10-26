@@ -62,8 +62,8 @@ function bereiteSchemataVor(){
 
 /* ---------- Speicher ---------- */
 const KEY='schematrainer:v1', DAY=86400000, INTERVALS=[0,1,3,7,16,30];
-let store={cards:{},scores:{},lueckentext:{}};
-try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{},lueckentext:p.lueckentext||{}};}}catch(e){}
+let store={cards:{},scores:{},lueckentext:{},verschieben:{}};
+try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{},lueckentext:p.lueckentext||{},verschieben:p.verschieben||{}};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 function card(cid){return store.cards[cid]||{box:0,due:0};}
 // Ansicht der Startseite: Reiter "fertig" (mitgelieferte Schemata, unterteilt nach Bereich: Strafrecht,
@@ -165,17 +165,18 @@ function dueHtml(){
   </section>`;
 }
 function karte(s){
-  const sc=store.scores[s.id], lz=store.lueckentext[s.id], defs=s.steps.filter(x=>x.d).length;
+  const sc=store.scores[s.id], lz=store.lueckentext[s.id], vs=store.verschieben[s.id], defs=s.steps.filter(x=>x.d).length;
   const z=Eigene.karteZusatz(s); // Kennzeichnung und Bearbeiten-Knopf für eigene Schemata
   return `<article class="schema${s.eigen?' eigen':''}">
       <div class="norm">${esc(s.norm)}${z.tag}</div>
       <h3>${esc(s.title)}</h3>
-      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}${lz?`. Zuletzt im Lückentext ${lz.richtig} von ${lz.total} Lücken`:''}.${z.hinweis}</div>
+      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}${lz?`. Zuletzt im Lückentext ${lz.richtig} von ${lz.total} Lücken`:''}${vs?`. Zuletzt beim Verschieben ${vs.richtig} von ${vs.total} richtig`:''}.${z.hinweis}</div>
       <div class="actions">
         <button class="btn primary" data-act="build" data-id="${s.id}">Aufbau abfragen</button>
         <button class="btn" data-act="order" data-id="${s.id}">Ordnen</button>
         <button class="btn" data-act="cards" data-id="${s.id}"${defs?'':' disabled'}>Definitionen</button>
         <button class="btn" data-act="cloze" data-id="${s.id}"${defs?'':' disabled'}>Lückentext</button>
+        <button class="btn" data-act="move" data-id="${s.id}">Verschieben</button>
         <button class="btn" data-act="view" data-id="${s.id}">Ansehen</button>
         ${z.knopf}
       </div>
@@ -385,9 +386,88 @@ function renderCloze(){
   if(!fertig&&st.tippen){const inp=app.querySelector('.luecke-eingabe'); if(inp) inp.focus({preventScroll:true});}
 }
 
+/* ---------- Verschieben ---------- */
+// Das Schema erscheint leer (Nummern und Einrückungen bleiben stehen), die Prüfungspunkte liegen gemischt im Vorrat.
+// Ablegen durch Ziehen (Maus sofort, Finger nach kurzem Halten) oder durch Antippen: erst den Punkt, dann die Stelle.
+function startMove(s){
+  state={kind:'move',s,slots:s.steps.map(()=>null),pool:shuffle(s.steps.map((st,i)=>i)),gewaehlt:null,fertig:false};
+  renderMove();
+}
+// Punkt i in Stelle ziel legen; liegt dort schon ein Punkt, wandert er dorthin, wo i herkam (Vorrat oder Stelle)
+function vAblegen(i,ziel){
+  const st=state, alt=st.slots[ziel], von=st.slots.indexOf(i);
+  if(von>=0) st.slots[von]=null; else st.pool=st.pool.filter(x=>x!==i);
+  if(alt!==null&&alt!==i){ if(von>=0) st.slots[von]=alt; else st.pool.unshift(alt); }
+  st.slots[ziel]=i; st.gewaehlt=null;
+}
+function vZurueck(i){ const st=state, von=st.slots.indexOf(i); if(von>=0){ st.slots[von]=null; if(!st.pool.includes(i)) st.pool.unshift(i); } }
+function renderMove(){
+  const {s,slots,pool,gewaehlt,fertig}=state, n=s.steps.length;
+  const richtig=slots.filter((x,i)=>x===i).length;
+  if(fertig){ store.verschieben[s.id]={richtig,total:n,at:Date.now()}; save(); }
+  app.innerHTML=topbar(s)
+  +(fertig?`<div class="result"><p class="score">${richtig} von ${n}</p><p>Prüfungspunkten an der richtigen Stelle.</p></div>`
+    :`<p class="task">Setze die Prüfungspunkte an die richtige Stelle.</p><p class="sub">Ziehen (am Handy kurz halten) oder antippen: erst den Punkt, dann die Stelle. Ein abgelegter Punkt kehrt durch Antippen in den Vorrat zurück.</p>`)
+  +`<ol class="outline verschieben">${s.steps.map((st,i)=>{
+    const x=slots[i], leer=x===null, ok=fertig&&x===i;
+    const klasse='step vslot'+(leer?' leer':'')+(fertig?(ok?' ok':' bad'):'')+(!fertig&&gewaehlt!==null&&leer?' bereit':'');
+    const inhalt=fertig
+      ?(leer?`<span class="placeholder">${esc(st.t)}</span>`:`${esc(s.steps[x].t)}${ok?'':`<div class="richtig">Richtig: ${esc(st.t)}</div>`}`)
+      :(leer?`<span class="placeholder">${gewaehlt!==null?'Hier ablegen':'…'}</span>`:`<button class="vitem${gewaehlt===x?' gewaehlt':''}" data-act="v-abgelegt" data-vitem="${x}" data-von="slot">${esc(s.steps[x].t)}</button>`);
+    return `<li class="${klasse}" data-l="${st.l}" data-vslot="${i}" style="--lvl:${st.l}"${fertig?'':' data-act="v-slot"'}><span class="num">${esc(st.num)}</span><div class="txt">${inhalt}</div>${fertig?`<span class="mark" aria-label="${ok?'richtig':'falsch'}">${ok?'✓':'✗'}</span>`:''}</li>`;
+  }).join('')}</ol>`
+  +(fertig?`<div class="actions"><button class="btn primary" data-act="move" data-id="${s.id}">Noch einmal</button><button class="btn" data-act="build" data-id="${s.id}">Aufbau abfragen</button><button class="btn" data-act="home">Zur Übersicht</button></div>`
+    :`<h3>Vorrat${pool.length?` (${pool.length})`:''}</h3><div class="chips vorrat">${pool.map(i=>`<button class="chip vitem${gewaehlt===i?' gewaehlt':''}" data-act="v-chip" data-vitem="${i}" data-von="pool">${esc(s.steps[i].t)}</button>`).join('')}${pool.length?'':'<p class="sub">Alle Punkte sind abgelegt.</p>'}</div>
+  <div class="controls"><button class="btn primary" data-act="v-auswerten"${pool.length?' disabled':''}>Auswerten</button></div>${pool.length?'<p class="hint">Auswerten geht, sobald alle Punkte abgelegt sind</p>':''}`);
+}
+// Ziehen mit Zeigerereignissen (Maus und Finger). Nach dem Loslassen wird der folgende Klick unterdrückt.
+let zieh=null, klickSperre=false;
+function vSlotUnter(x,y){ const el=document.elementFromPoint(x,y); return el?el.closest('[data-vslot]'):null; }
+function vZiehEnde(){
+  const z=zieh; zieh=null; if(!z) return null;
+  clearTimeout(z.timer); if(z.ghost) z.ghost.remove(); z.el.classList.remove('wird-gezogen');
+  document.querySelectorAll('.vslot.ziel').forEach(el=>el.classList.remove('ziel'));
+  return z;
+}
+document.addEventListener('pointerdown',e=>{
+  if(!state||state.kind!=='move'||state.fertig) return;
+  const el=e.target.closest('[data-vitem]'); if(!el||(e.pointerType==='mouse'&&e.button!==0)) return;
+  zieh={el,i:+el.dataset.vitem,x:e.clientX,y:e.clientY,id:e.pointerId,aktiv:false,bereit:e.pointerType==='mouse',timer:0};
+  // Finger: erst nach kurzem Halten ziehen, damit die Seite weiter scrollbar bleibt
+  if(!zieh.bereit) zieh.timer=setTimeout(()=>{ if(zieh&&!zieh.aktiv){ zieh.bereit=true; el.classList.add('wird-gezogen'); } },250);
+});
+document.addEventListener('pointermove',e=>{
+  if(!zieh||e.pointerId!==zieh.id) return;
+  const d=Math.hypot(e.clientX-zieh.x,e.clientY-zieh.y);
+  if(!zieh.aktiv){
+    if(!zieh.bereit){ if(d>8){ clearTimeout(zieh.timer); zieh=null; } return; }
+    if(d<4) return;
+    zieh.aktiv=true; zieh.ghost=zieh.el.cloneNode(true); zieh.ghost.className='vghost'; document.body.appendChild(zieh.ghost); zieh.el.classList.add('wird-gezogen');
+    try{ zieh.el.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  e.preventDefault();
+  // Nahe am oberen oder unteren Rand die Seite mitscrollen, damit auch entfernte Stellen erreichbar sind
+  const rand=70; if(e.clientY<rand) window.scrollBy(0,-16); else if(e.clientY>window.innerHeight-rand) window.scrollBy(0,16);
+  zieh.ghost.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  document.querySelectorAll('.vslot.ziel').forEach(el=>el.classList.remove('ziel'));
+  const slot=vSlotUnter(e.clientX,e.clientY); if(slot) slot.classList.add('ziel');
+},{passive:false});
+document.addEventListener('pointerup',e=>{
+  if(!zieh||e.pointerId!==zieh.id) return;
+  const z=vZiehEnde();
+  if(!z.aktiv) return; // kurzes Antippen: übernimmt der Klick-Handler
+  klickSperre=true; setTimeout(()=>{klickSperre=false;},0);
+  const slot=vSlotUnter(e.clientX,e.clientY);
+  if(slot) vAblegen(z.i,+slot.dataset.vslot); else if(z.el.dataset.von==='slot') vZurueck(z.i);
+  state.gewaehlt=null; renderMove();
+});
+document.addEventListener('pointercancel',()=>{ vZiehEnde(); });
+document.addEventListener('touchmove',e=>{ if(zieh&&(zieh.aktiv||zieh.bereit)) e.preventDefault(); },{passive:false});
+
 /* ---------- Ereignisse ---------- */
 const byId=id=>SCHEMAS.find(x=>x.id===id);
 document.addEventListener('click',e=>{
+  if(klickSperre){ klickSperre=false; return; } // Klick direkt nach dem Ziehen
   const b=e.target.closest('[data-act]'); if(!b) return;
   const act=b.dataset.act, s=byId(b.dataset.id);
   switch(act){
@@ -428,6 +508,16 @@ document.addEventListener('click',e=>{
       startCards(list); window.scrollTo(0,0); break;
     }
     case 'cloze': startCloze(s); window.scrollTo(0,0); break;
+    case 'move': startMove(s); window.scrollTo(0,0); break;
+    case 'v-chip': { const i=+b.dataset.vitem; state.gewaehlt=state.gewaehlt===i?null:i; renderMove(); break; }
+    case 'v-abgelegt': {
+      const i=+b.dataset.vitem;
+      if(state.gewaehlt!==null&&state.gewaehlt!==i) vAblegen(state.gewaehlt,+b.closest('[data-vslot]').dataset.vslot);
+      else { vZurueck(i); state.gewaehlt=i; }
+      renderMove(); break;
+    }
+    case 'v-slot': { if(state.gewaehlt===null) break; vAblegen(state.gewaehlt,+b.dataset.vslot); renderMove(); break; }
+    case 'v-auswerten': state.fertig=true; state.gewaehlt=null; renderMove(); window.scrollTo(0,0); break;
     case 'lz-chip': {
       const st=state, k=st.queue[st.pos], j=+b.dataset.j;
       if(st.gefuellt>=k.luecken.length) break;
@@ -443,7 +533,7 @@ document.addEventListener('click',e=>{
     case 'flip': {const t=document.getElementById('mine'); state.mine=t?t.value.trim():''; state.revealed=true; renderCards(); break;}
     case 'rateCard': rateCard(+b.dataset.v); break;
     case 'reset':
-      if(b.dataset.armed){store={cards:{},scores:{},lueckentext:{}};save();delete b.dataset.armed;b.textContent='Lernstand zurücksetzen';renderHome();}
+      if(b.dataset.armed){store={cards:{},scores:{},lueckentext:{},verschieben:{}};save();delete b.dataset.armed;b.textContent='Lernstand zurücksetzen';renderHome();}
       else{b.dataset.armed='1';b.textContent='Zum Bestätigen erneut tippen';}
       break;
     default: Eigene.aktion(act,b); // Editor, Import, Export (js/eigene.js)
