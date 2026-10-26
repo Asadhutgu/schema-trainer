@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-verantwortlichkeit",
   norm: "§§ 13, 14, 25 StGB; §§ 30, 130 OWiG",
   titel: "Verantwortlichkeit im Unternehmen (Prüfungsreihenfolge im Gutachten)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1.", "a)", "aa)"],

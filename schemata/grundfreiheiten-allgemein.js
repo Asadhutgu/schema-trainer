@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "gf-allg",
   norm: "Art. 34, 45, 49, 56, 63 AEUV",
   titel: "Grundfreiheiten – allgemeines Prüfungsschema",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["I.", "1.", "a)", "aa)"],

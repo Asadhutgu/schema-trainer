@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-263",
   norm: "§ 263 StGB",
   titel: "Betrug",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)", "aa)"],

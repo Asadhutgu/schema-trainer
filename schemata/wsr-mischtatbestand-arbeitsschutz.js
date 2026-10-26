@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-mischtatbestand",
   norm: "§ 26 ArbSchG, § 23 ArbZG, § 33 MuSchG, § 58 Abs. 5 JArbSchG",
   titel: "Mischtatbestände des Arbeitsschutzstrafrechts",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["1.", "a)", "aa)"],

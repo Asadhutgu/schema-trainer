@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-283c",
   norm: "§ 283c StGB",
   titel: "Gläubigerbegünstigung",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["I.", "1.", "a)"],

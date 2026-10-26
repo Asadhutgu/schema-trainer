@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-283",
   norm: "§ 283 StGB",
   titel: "Bankrott",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["I.", "1.", "a)", "aa)"],

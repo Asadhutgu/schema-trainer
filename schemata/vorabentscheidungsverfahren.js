@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "vab",
   norm: "Art. 267 AEUV",
   titel: "Vorabentscheidungsverfahren",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Rechtsschutz und Verfahren",
   gliederung: ["A.", "I.", "1."],

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-irrtum-blankett",
   norm: "§§ 16, 17 StGB",
   titel: "Irrtum über Blankett und normatives Tatbestandsmerkmal",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1."],

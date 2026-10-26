@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-begriffe-ke4",
   norm: "Arbeitsstrafrecht",
   titel: "Begriffe: Arbeitsstrafrecht, Schwarzarbeit und Geheimnisschutz (KE 4)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["1.", "a)", "aa)"],

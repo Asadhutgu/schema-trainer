@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-10-schwarzarbg",
   norm: "§ 10 Abs. 1 SchwarzArbG",
   titel: "Beschäftigung von Ausländern zu ungünstigen Arbeitsbedingungen",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Arbeitsstrafrecht (KE 4)",
   gliederung: ["I.", "1.", "a)"],

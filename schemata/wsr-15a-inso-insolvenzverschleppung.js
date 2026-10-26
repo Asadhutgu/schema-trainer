@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-15a",
   norm: "§ 15a Abs. 4 InsO",
   titel: "Insolvenzverschleppung",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["I.", "1.", "a)", "aa)"],

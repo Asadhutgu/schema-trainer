@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "anf",
   norm: "Art. 45 AEUV",
   titel: "Arbeitnehmerfreizügigkeit",
+  bereich: "Öffentliches Recht",
   gebiet: "Europarecht",
   gruppe: "Grundfreiheiten",
   gliederung: ["A.", "1.", "a)"],

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-verband-zusammenspiel",
   norm: "§§ 9, 30, 130 OWiG",
   titel: "Zusammenspiel §§ 9, 30, 130 OWiG (Verbandsgeldbuße bei Mitarbeiterdelikt)",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Allgemeiner Teil und Unternehmensverantwortlichkeit (KE 1)",
   gliederung: ["1.", "a)"],

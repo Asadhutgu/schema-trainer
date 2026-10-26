@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-corona",
   norm: "§§ 264, 263 StGB",
   titel: "Corona-Hilfen: § 264 oder § 263 StGB?",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["1."],

@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-unrechtsvereinbarung",
   norm: "§§ 331 ff., 299, 108e, 108f StGB",
   titel: "Unrechtsvereinbarung bei §§ 331 ff. / § 299 StGB",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["1."],

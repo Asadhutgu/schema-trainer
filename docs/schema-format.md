@@ -20,7 +20,8 @@ SCHEMATA.push({
   id: "kurzname",                 // nur Kleinbuchstaben, Ziffern, Bindestriche; nie mehr ändern
   norm: "Art. 49 AEUV",           // erscheint in Gold über dem Titel
   titel: "Niederlassungsfreiheit",
-  gebiet: "Europarecht",           // freiwillig: Rechtsgebiet, nach dem die Startseite filtert
+  bereich: "Öffentliches Recht",   // Reiter auf der Startseite: Strafrecht, Öffentliches Recht oder Zivilrecht
+  gebiet: "Europarecht",           // freiwillig: Rechtsgebiet, große Überschrift innerhalb des Reiters
   gruppe: "Grundfreiheiten",       // freiwillig: Zwischenüberschrift innerhalb des Rechtsgebiets
   gliederung: ["I.", "1.", "a)"], // Gliederungszeichen je Ebene
   punkte: [
@@ -43,7 +44,9 @@ SCHEMATA.push({
 
 `id` ist der interne Kurzname des Schemas. Er steckt im gespeicherten Lernstand und darf deshalb nach der Veröffentlichung nicht mehr geändert werden.
 
-`gebiet` ist freiwillig und nennt das Rechtsgebiet, zum Beispiel „Europarecht“ oder „Wirtschaftsstrafrecht“. Gibt es mindestens zwei Rechtsgebiete, zeigt die Startseite oben eine Auswahl („Alle Gebiete“, dann je Gebiet ein Knopf), und die Schemata stehen gebietsweise unter einer großen Überschrift. Die gewählte Ansicht merkt sich der Browser; auch die Zahl der fälligen Karten und „Wiederholen“ beziehen sich auf die gewählte Ansicht. Schemata ohne `gebiet` erscheinen in jeder Ansicht.
+`bereich` ordnet ein mitgeliefertes Schema einem der drei Reiter auf der Startseite zu: „Strafrecht“, „Öffentliches Recht“ oder „Zivilrecht“. Für die Dateien im Ordner `schemata/` sollte das Feld gesetzt sein; fehlt es, erscheint das Schema in einem eigenen Reiter „Weitere Schemata“, und die Prüfung gibt einen Hinweis. Eigene Schemata, die in der App angelegt werden, brauchen keinen Bereich; sie stehen im Reiter „Eigene Schemata“.
+
+`gebiet` ist freiwillig und nennt das Rechtsgebiet innerhalb des Bereichs, zum Beispiel „Europarecht“ oder „Wirtschaftsstrafrecht“. Innerhalb eines Reiters stehen die Schemata gebietsweise unter einer großen Überschrift. Die gewählten Reiter merkt sich der Browser; auch die Zahl der fälligen Karten und „Wiederholen“ beziehen sich auf den gewählten Reiter.
 
 `gruppe` ist freiwillig. Schemata mit derselben `gruppe` (innerhalb desselben Rechtsgebiets) stehen auf der Startseite unter einer gemeinsamen Zwischenüberschrift (zum Beispiel „Grundfreiheiten“ oder „Rechtsschutz vor den Unionsgerichten“). Die Reihenfolge der Gebiete und Gruppen folgt dem ersten Auftreten in `schemata/liste.js`; Schemata ohne `gruppe` stehen am Ende ihres Gebiets unter „Weitere Schemata“.
 

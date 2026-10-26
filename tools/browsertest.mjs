@@ -51,15 +51,31 @@ async function szenario(browser, basis, name) {
   console.log(`\n${name}`);
   // Sauberer Start
   await page.goto(basis + 'index.html');
-  await page.waitForSelector('article.schema');
+  await page.waitForSelector('.intro');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('article.schema');
 
-  // 1. Startseite (Zahl der mitgelieferten Schemata aus schemata/liste.js)
-  const anzahl = await page.evaluate(() => window.SCHEMA_DATEIEN.length);
-  check(await karten() === anzahl, anzahl + ' mitgelieferte Schemata');
-  for (const act of ['e-start', 'i-start', 'x-start']) check(await page.locator(`[data-act="${act}"]`).count() === 1, 'Knopf ' + act + ' vorhanden');
+  // 1. Startseite: Reiter "Fertige Schemata" mit Bereichen, Reiter "Eigene Schemata"
+  const jeBereich = await page.evaluate(() => { const m = {}; SCHEMAS.filter(s => !s.eigen).forEach(s => { m[s.bereich || ''] = (m[s.bereich || ''] || 0) + 1; }); return m; });
+  check(await page.getAttribute('.tabs.haupt .tab.aktiv', 'data-w') === 'fertig', 'Reiter „Fertige Schemata“ ist vorausgewählt');
+  check(await page.locator('.tabs.bereiche .tab').count() >= 3, 'Mindestens drei Bereichsreiter vorhanden');
+  check(await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w') === 'Strafrecht', 'Bereich „Strafrecht“ ist vorausgewählt');
+  check(await karten() === (jeBereich['Strafrecht'] || 0), 'Strafrecht zeigt seine ' + (jeBereich['Strafrecht'] || 0) + ' Schemata');
+  await page.click('.tabs.bereiche .tab[data-w="Öffentliches Recht"]');
+  await page.waitForSelector('.tabs.bereiche .tab.aktiv[data-w="Öffentliches Recht"]');
+  check(await karten() === (jeBereich['Öffentliches Recht'] || 0), 'Öffentliches Recht zeigt seine ' + (jeBereich['Öffentliches Recht'] || 0) + ' Schemata');
+  check(await page.locator('h2.gebiet', { hasText: 'Europarecht' }).count() === 1, 'Überschrift „Europarecht“ im Bereich');
+  await page.reload();
+  await page.waitForSelector('.tabs.bereiche');
+  check(await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w') === 'Öffentliches Recht', 'Gewählter Bereich bleibt nach Neuladen');
+  await page.click('.tabs.bereiche .tab[data-w="Zivilrecht"]');
+  await page.waitForSelector('.leer');
+  check((await txt('.leer')).includes('noch keine fertigen Schemata'), 'Zivilrecht zeigt den Hinweis auf fehlende Schemata');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('.leer [data-act="e-start"]');
+  check((await txt('.leer h2')).includes('Eigene Schemata'), 'Reiter „Eigene Schemata“ ohne eigene Schemata zeigt den Einstieg');
+  for (const act of ['e-start', 'i-start']) check(await page.locator(`[data-act="${act}"]`).count() === 1, 'Knopf ' + act + ' vorhanden');
 
   // 2. Editor Schritt 1: Aufbau
   await page.click('[data-act="e-start"]');
@@ -131,29 +147,18 @@ async function szenario(browser, basis, name) {
   check(gespeichert[0].schema.punkte[4].definition.id === 'beschwerdefahigkeit-2', 'Doppelter Begriff bekam eigene Kennung');
   check(await page.evaluate(() => localStorage.getItem('schematrainer:entwurf:v1')) === null, 'Entwurf nach Speichern gelöscht');
 
-  // 4. Startseite und Lernmodi mit dem eigenen Schema
+  // 4. Reiter "Eigene Schemata" nach dem Speichern, Lernmodi mit dem eigenen Schema
   await page.click('[data-act="home"]');
   await page.waitForSelector('article.schema');
-  check(await karten() === anzahl + 1, (anzahl + 1) + ' Schemata auf der Startseite');
+  check(await page.getAttribute('.tabs.haupt .tab.aktiv', 'data-w') === 'eigene', 'Nach dem Speichern ist der Reiter „Eigene Schemata“ aktiv');
+  check(await karten() === 1, 'Ein eigenes Schema im Reiter');
   check(await page.locator('.gruppe', { hasText: 'Staatsrecht' }).count() === 1, 'Gruppe „Staatsrecht“ erscheint');
-  // Filter nach Rechtsgebiet (nur, wenn es mindestens zwei gibt)
-  const gebieteListe = await page.evaluate(() => gebiete());
-  if (gebieteListe.length >= 2) {
-    check(await page.locator('.filter .chipf').count() === gebieteListe.length + 1, 'Ein Filterknopf je Rechtsgebiet plus „Alle Gebiete“');
-    check(await page.locator('h2.gebiet').count() === gebieteListe.length, 'Je Rechtsgebiet eine Abschnittsüberschrift');
-    const g = gebieteListe[gebieteListe.length - 1];
-    await page.click(`.filter .chipf[data-g="${g}"]`);
-    await page.waitForSelector(`.chipf.aktiv[data-g="${g}"]`);
-    const erwartet = await page.evaluate(g2 => SCHEMAS.filter(s => !s.gebiet || s.gebiet === g2).length, g);
-    check(await karten() === erwartet, 'Filter zeigt nur das gewählte Rechtsgebiet');
-    check(await page.locator('h2.gebiet').count() === 0, 'Ohne zweites Gebiet keine Abschnittsüberschrift');
-    await page.reload();
-    await page.waitForSelector('article.schema');
-    check(await page.getAttribute('.chipf.aktiv', 'data-g') === g, 'Gewähltes Rechtsgebiet bleibt nach Neuladen');
-    await page.click('.filter .chipf[data-g=""]');
-    await page.waitForSelector('.chipf.aktiv[data-g=""]');
-    check(await karten() === anzahl + 1, 'Alle Gebiete wieder sichtbar');
-  } else check(await page.locator('.filter').count() === 0, 'Kein Filter bei nur einem Rechtsgebiet');
+  check(await page.locator('[data-act="x-start"]').count() === 1, 'Knopf „Exportieren“ im Reiter vorhanden');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
+  await page.waitForSelector('.tabs.bereiche');
+  check(await page.locator('article.schema.eigen').count() === 0, 'Eigenes Schema erscheint nicht unter den fertigen');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('article.schema.eigen');
   check(await page.locator('article.schema.eigen .tag', { hasText: 'Eigenes Schema' }).count() === 1, 'Kennzeichen „Eigenes Schema“');
   await page.click('article.schema.eigen [data-act="build"]');
   await page.click('[data-act="reveal"]');
@@ -172,8 +177,100 @@ async function szenario(browser, basis, name) {
   await page.waitForSelector('.chip');
   check(await page.locator('.chip').count() === 3, 'Ordnen zeigt drei Hauptpunkte');
 
-  // 5. Bearbeiten: Begriff umformulieren, Karten-Kennung bleibt
+  // 4b. Lückentext mit der eigenen Definition (zwei Lücken, Wörter zum Antippen)
   await page.click('[data-act="home"]');
+  await page.click('article.schema.eigen [data-act="cloze"]');
+  await page.waitForSelector('.lueckentext');
+  const luecken = await page.evaluate(() => state.queue[state.pos].luecken.map(l => l.wort));
+  check(luecken.length === 2, 'Lückentext: zwei Lücken');
+  check(await page.locator('.luecke.aktiv .luecke-eingabe').count() === 1, 'Eingabefeld in der markierten ersten Lücke');
+  check(await page.locator('.chip.wort').count() === 0, 'Am PC ist die Wortauswahl zunächst ausgeblendet');
+  await page.fill('.luecke-eingabe', 'xyzxyz');
+  await page.press('.luecke-eingabe', 'Enter');
+  check(await page.evaluate(() => state.fehler) === 1, 'Falsch getipptes Wort zählt als Fehlgriff');
+  await page.fill('.luecke-eingabe', luecken[0].toUpperCase());
+  await page.press('.luecke-eingabe', 'Enter');
+  await page.waitForSelector('.luecke.gefuellt');
+  check(await page.evaluate(() => state.gefuellt) === 1, 'Richtig getipptes Wort füllt die Lücke (Groß-/Kleinschreibung egal)');
+  await page.click('[data-act="lz-woerter"]');
+  await page.waitForSelector('.chip.wort');
+  check(await page.locator('.chip.wort').count() === luecken.length - 1, 'Wortauswahl zeigt nur die verbleibenden Wörter');
+  for (const w of luecken.slice(1)) await page.locator(`.chip.wort:text-is("${w}")`).first().click();
+  await page.waitForSelector('[data-act="lz-weiter"]');
+  check(await page.locator('.luecke.gefuellt').count() === luecken.length && (await page.locator('.card .src').count()) === 1, 'Alle Lücken gefüllt, Fundstelle erscheint');
+  await page.click('[data-act="lz-weiter"]');
+  // weitere Definitionen des Schemas: alle Lücken tippen
+  await page.waitForSelector('.lueckentext, .result');
+  while (await page.locator('.lueckentext').count()) {
+    const ws = await page.evaluate(() => state.queue[state.pos].luecken.map(l => l.wort));
+    for (const w of ws) { await page.fill('.luecke-eingabe', w); await page.press('.luecke-eingabe', 'Enter'); }
+    await page.waitForSelector('[data-act="lz-weiter"]');
+    await page.click('[data-act="lz-weiter"]');
+    await page.waitForSelector('.lueckentext, .result');
+  }
+  const gesamt = await page.evaluate(() => state.total);
+  check((await txt('.score')).trim() === `${gesamt} von ${gesamt}`, 'Lückentext-Ergebnis: alle ' + gesamt + ' Lücken richtig');
+  const lzStore = await page.evaluate(() => JSON.parse(localStorage.getItem('schematrainer:v1')).lueckentext);
+  check(!!(lzStore && lzStore.verfassungsbeschwerde && lzStore.verfassungsbeschwerde.richtig === gesamt), 'Lückentext-Ergebnis gespeichert');
+  // "Lösung zeigen" über alle Definitionen: nichts zählt als richtig
+  await page.click('[data-act="cloze"][data-id="verfassungsbeschwerde"]');
+  await page.waitForSelector('.lueckentext');
+  let erste = true;
+  while (await page.locator('.lueckentext').count()) {
+    const anzahlLuecken = await page.evaluate(() => state.queue[state.pos].luecken.length);
+    await page.click('[data-act="lz-loesung"]');
+    if (erste) { check(await page.locator('.luecke.aufgedeckt').count() === anzahlLuecken, '„Lösung zeigen“ deckt die Lücken auf'); erste = false; }
+    await page.click('[data-act="lz-weiter"]');
+    await page.waitForSelector('.lueckentext, .result');
+  }
+  check((await txt('.score')).trim() === `0 von ${gesamt}`, 'Aufgedeckte Lücken zählen nicht als richtig');
+  await page.click('[data-act="home"]');
+  await page.waitForSelector('article.schema.eigen');
+  check((await txt('article.schema.eigen .meta')).includes(`Lückentext 0 von ${gesamt}`), 'Schema-Karte zeigt das letzte Lückentext-Ergebnis');
+
+  // 4c. Verschieben: leeres Schema aus dem Vorrat füllen (antippen und ziehen)
+  await page.click('article.schema.eigen [data-act="move"]');
+  await page.waitForSelector('.outline.verschieben');
+  const nPunkte = await page.evaluate(() => state.s.steps.length);
+  check(await page.locator('.vslot').count() === nPunkte && await page.locator('.vorrat .vitem').count() === nPunkte, 'Verschieben: leere Stellen und Vorrat mit allen Punkten');
+  check(await page.locator('[data-act="v-auswerten"]').isDisabled(), 'Auswerten gesperrt, solange der Vorrat nicht leer ist');
+  await page.click('.vorrat .vitem[data-vitem="0"]');
+  check(await page.locator('.vorrat .vitem.gewaehlt').count() === 1, 'Angetippter Punkt ist markiert');
+  await page.click('.vslot[data-vslot="0"]');
+  check(await page.evaluate(() => state.slots[0] === 0), 'Punkt per Antippen abgelegt');
+  await page.click('.vorrat .vitem[data-vitem="2"]');
+  await page.click('.vslot[data-vslot="1"]');
+  await page.click('.vslot[data-vslot="1"] .vitem');
+  check(await page.evaluate(() => state.slots[1] === null && state.pool.includes(2) && state.gewaehlt === 2), 'Abgelegter Punkt kehrt durch Antippen in den Vorrat zurück und bleibt markiert');
+  await page.click('.vslot[data-vslot="2"]');
+  check(await page.evaluate(() => state.slots[2] === 2), 'Markierter Punkt an anderer Stelle abgelegt');
+  // Ziehen mit der Maus (Quelle und Ziel werden dabei in den sichtbaren Bereich gescrollt)
+  const quelleEl = page.locator('.vorrat .vitem[data-vitem="1"]');
+  await quelleEl.evaluate(el => el.scrollIntoView({ block: 'center' })); // mittig, nicht unter der haftenden Knopfleiste
+  const quelle = await quelleEl.boundingBox();
+  await page.mouse.move(quelle.x + quelle.width / 2, quelle.y + quelle.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(quelle.x + 40, quelle.y + 20, { steps: 5 });
+  await page.locator('.vslot[data-vslot="1"]').evaluate(el => el.scrollIntoView({ block: 'center' })); // mittig, damit das Mitscrollen am Rand nicht greift
+  const ziel = await page.locator('.vslot[data-vslot="1"]').boundingBox();
+  await page.mouse.move(ziel.x + ziel.width / 2, ziel.y + ziel.height / 2, { steps: 10 });
+  const ziel2 = await page.locator('.vslot[data-vslot="1"]').boundingBox(); // falls die Seite unterwegs gescrollt hat
+  await page.mouse.move(ziel2.x + ziel2.width / 2, ziel2.y + ziel2.height / 2, { steps: 3 });
+  await page.mouse.up();
+  check(await page.evaluate(() => state.slots[1] === 1), 'Punkt per Ziehen mit der Maus abgelegt');
+  check(await page.locator('.vghost').count() === 0 && await page.locator('.vorrat .vitem.gewaehlt').count() === 0, 'Nach dem Ziehen bleibt nichts markiert');
+  for (let i = 3; i < nPunkte; i++) { await page.click(`.vorrat .vitem[data-vitem="${i}"]`); await page.click(`.vslot[data-vslot="${i}"]`); }
+  await page.waitForSelector('[data-act="v-auswerten"]:not([disabled])');
+  await page.click('[data-act="v-auswerten"]');
+  await page.waitForSelector('.result');
+  check((await txt('.score')).trim() === `${nPunkte} von ${nPunkte}`, 'Verschieben: alle Punkte richtig');
+  const vStore = await page.evaluate(() => JSON.parse(localStorage.getItem('schematrainer:v1')).verschieben);
+  check(!!(vStore && vStore.verfassungsbeschwerde && vStore.verfassungsbeschwerde.richtig === nPunkte), 'Verschieben-Ergebnis gespeichert');
+  await page.click('[data-act="home"]');
+  await page.waitForSelector('article.schema.eigen');
+  check((await txt('article.schema.eigen .meta')).includes(`Verschieben ${nPunkte} von ${nPunkte}`), 'Schema-Karte zeigt das Verschieben-Ergebnis');
+
+  // 5. Bearbeiten: Begriff umformulieren, Karten-Kennung bleibt (wir stehen schon auf der Startseite)
   await page.click('article.schema.eigen [data-act="e-bearbeiten"]');
   await page.waitForSelector('#e-titel');
   check((await txt('h2.title')).trim() === 'Schema bearbeiten', 'Editor für eigenes Schema');
@@ -201,6 +298,18 @@ async function szenario(browser, basis, name) {
   await page.click('[data-act="x-kopieren"]');
   await page.waitForFunction(() => /kopiert|von Hand/.test(document.querySelector('#x-ausgabe').textContent));
   check(true, 'Kopieren liefert Rückmeldung');
+  // Für alle auf GitHub hochladen: Erklärung, dann GitHub-Seite mit Dateiname und Inhalt (window.open wird abgefangen)
+  await page.evaluate(() => { window.__geoeffnet = null; window.open = (u) => { window.__geoeffnet = u; return null; }; });
+  await page.click('[data-act="x-github"]');
+  await page.waitForSelector('[data-act="x-github-los"]');
+  check((await txt('.githubbox')).includes('öffentlich') && (await txt('.githubbox')).includes('1 Schema'), 'Hinweis: Hochladen ist öffentlich, nur eigene angekreuzte Schemata');
+  await page.click('[data-act="x-github-los"]');
+  await page.waitForSelector('#x-githubtext');
+  const geoeffnet = await page.evaluate(() => window.__geoeffnet);
+  const inhaltOk = typeof geoeffnet === 'string' && geoeffnet.startsWith('https://github.com/Asadhutgu/schema-trainer/new/main/community?filename=verfassungsbeschwerde-') && /&value=/.test(geoeffnet) && decodeURIComponent(geoeffnet.split('&value=')[1]).includes('"id":"verfassungsbeschwerde"');
+  check(inhaltOk, 'GitHub-Seite „neue Datei“ mit Dateiname und Inhalt geöffnet');
+  check((await txt('.githubbox')).includes('Create pull request'), 'Anleitung für die Schritte auf GitHub');
+  await page.click('[data-act="x-github-zu"]');
 
   // 7. Import als Text mit Konflikt zu eigenem Schema
   await page.click('[data-act="home"]');
@@ -212,7 +321,7 @@ async function szenario(browser, basis, name) {
   await page.selectOption('select[data-wahl="0"]', 'kopie');
   await page.click('[data-act="i-ausfuehren"]');
   await page.waitForSelector('.hinweisbox.ok');
-  check(await karten() === anzahl + 2, (anzahl + 2) + ' Schemata nach Import als Kopie');
+  check(await karten() === 2, 'Zwei eigene Schemata nach Import als Kopie');
   check((await eigeneImSpeicher()).some(e => e.schema.id === 'verfassungsbeschwerde-2'), 'Kopie bekam id verfassungsbeschwerde-2');
 
   // 8. Import einer Schema-Datei (.js), Konflikt zu mitgeliefertem Schema, Original ersetzen
@@ -224,8 +333,16 @@ async function szenario(browser, basis, name) {
   await page.selectOption('select[data-wahl="0"]', 'ersetzen');
   await page.click('[data-act="i-ausfuehren"]');
   await page.waitForSelector('.hinweisbox.ok');
-  check(await karten() === anzahl + 2, 'Ersetzen: weiterhin ' + (anzahl + 2) + ' Schemata');
+  check(await karten() === 3, 'Eigene Fassung erscheint als drittes eigenes Schema');
   check(await page.locator('article.schema', { hasText: 'Deine Fassung ersetzt' }).count() === 1, 'Hinweis „Deine Fassung ersetzt das mitgelieferte Schema“');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
+  await page.waitForSelector('.tabs.bereiche');
+  await page.click('.tabs.bereiche .tab[data-w="Öffentliches Recht"]');
+  await page.waitForSelector('.tabs.bereiche .tab.aktiv[data-w="Öffentliches Recht"]');
+  check(await karten() === (jeBereich['Öffentliches Recht'] || 0), 'Fertige Schemata: Zahl unverändert, eigene Fassung steht an der Stelle des Originals');
+  check(await page.locator('article.schema.eigen', { hasText: 'Warenverkehrsfreiheit' }).count() === 1, 'Eigene Fassung der Warenverkehrsfreiheit unter den fertigen Schemata gekennzeichnet');
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('[data-act="i-start"]');
 
   // 9. Fehlerhafte Importe
   await page.click('[data-act="i-start"]');
@@ -286,8 +403,33 @@ async function szenario(browser, basis, name) {
 
   // 14. index.html ohne eigene Schemata
   await page.goto(basis + 'index.html');
+  await page.waitForSelector('.tabs.haupt');
+  await page.click('.tabs.haupt .tab[data-w="fertig"]');
   await page.waitForSelector('article.schema');
-  check(await karten() === anzahl, 'Wieder ' + anzahl + ' Schemata');
+  const aktiv = await page.getAttribute('.tabs.bereiche .tab.aktiv', 'data-w');
+  check(await karten() === (jeBereich[aktiv] || 0), 'Fertige Schemata wieder vollständig (' + aktiv + ')');
+
+  // 15. Aus GitHub herunterladen (die Antworten von GitHub werden im Test nachgestellt)
+  await page.route('https://api.github.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+    { name: 'gemeinschaft-test.json', type: 'file', download_url: 'https://raw.githubusercontent.com/Asadhutgu/schema-trainer/main/community/gemeinschaft-test.json' },
+    { name: 'README.md', type: 'file', download_url: 'https://raw.githubusercontent.com/Asadhutgu/schema-trainer/main/community/README.md' }]) }));
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ format: 'schema-trainer-import', schemata: [
+    { datei: 'gemeinschaft.js', herkunft: 'Testnutzerin', id: 'gemeinschaft-test', titel: 'Gemeinschaftsschema', gliederung: ['I.'], punkte: [{ ebene: 0, punkt: 'Erster Punkt' }] }] }) }));
+  await page.click('.tabs.haupt .tab[data-w="eigene"]');
+  await page.waitForSelector('[data-act="i-start"]');
+  await page.click('[data-act="i-start"]');
+  await page.waitForSelector('[data-act="i-github"]');
+  await page.click('[data-act="i-github"]');
+  await page.waitForSelector('.datei:has-text("Gemeinschaftsschema")');
+  check(!(await page.locator('.datei:has-text("Gemeinschaftsschema") input[type=checkbox]').isChecked()), 'Schema von GitHub ist zunächst nicht angekreuzt');
+  check((await txt('.datei:has-text("Gemeinschaftsschema")')).includes('von GitHub'), 'Herkunft „von GitHub“ wird angezeigt');
+  check(await page.locator('.datei').count() === 1, 'Nur JSON-Dateien aus dem Ordner werden angeboten');
+  await page.check('.datei:has-text("Gemeinschaftsschema") input[type=checkbox]');
+  await page.click('[data-act="i-ausfuehren"]');
+  await page.waitForSelector('.hinweisbox.ok');
+  check((await eigeneImSpeicher()).some(e => e.schema.id === 'gemeinschaft-test' && e.herkunft === 'Testnutzerin'), 'Schema von GitHub übernommen, Herkunft gespeichert');
+  await page.unroute('https://api.github.com/**');
+  await page.unroute('https://raw.githubusercontent.com/**');
   check(konsole.length === 0, 'Keine Fehler in der Browser-Konsole' + (konsole.length ? ': ' + konsole.join(' | ') : ''));
 
   await page.evaluate(() => localStorage.clear());

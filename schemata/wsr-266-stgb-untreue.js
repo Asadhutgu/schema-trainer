@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-266",
   norm: "§ 266 StGB",
   titel: "Untreue",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Betrug und Untreue im Wirtschaftsleben (KE 2)",
   gliederung: ["I.", "1.", "a)", "aa)"],

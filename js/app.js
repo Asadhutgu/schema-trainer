@@ -35,7 +35,7 @@ function bereiteSchemataVor(){
   const roh=mitgelieferte.filter(r=>!eigeneIds.has(r.id)).map(r=>[r,false]).concat(eigene.map(r=>[r,true]));
   SCHEMAS=roh
     .map(([r,eigen])=>({
-      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', gebiet:typeof r.gebiet==='string'?r.gebiet.trim():'', numbering:r.gliederung,
+      id:r.id, norm:r.norm||'', title:r.titel||'', group:typeof r.gruppe==='string'?r.gruppe.trim():'', gebiet:typeof r.gebiet==='string'?r.gebiet.trim():'', bereich:typeof r.bereich==='string'?r.bereich.trim():'', numbering:r.gliederung,
       roh:r, eigen, ersetzt:eigen&&ersetzt.has(r.id),
       steps:r.punkte.filter(p=>p&&typeof p==='object').map(p=>({
         l:Number.isInteger(p.ebene)&&p.ebene>=0?p.ebene:0, t:String(p.punkt||''), ref:typeof p.verweis==='string'?p.verweis.trim():'',
@@ -62,22 +62,35 @@ function bereiteSchemataVor(){
 
 /* ---------- Speicher ---------- */
 const KEY='schematrainer:v1', DAY=86400000, INTERVALS=[0,1,3,7,16,30];
-let store={cards:{},scores:{}};
-try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{}};}}catch(e){}
+let store={cards:{},scores:{},lueckentext:{},verschieben:{}};
+try{const raw=localStorage.getItem(KEY); if(raw){const p=JSON.parse(raw); store={cards:p.cards||{},scores:p.scores||{},lueckentext:p.lueckentext||{},verschieben:p.verschieben||{}};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
 function card(cid){return store.cards[cid]||{box:0,due:0};}
-// Ansicht: gewähltes Rechtsgebiet auf der Startseite (Feld "gebiet"); '' = alle
+// Ansicht der Startseite: Reiter "fertig" (mitgelieferte Schemata, unterteilt nach Bereich: Strafrecht,
+// Öffentliches Recht, Zivilrecht) oder "eigene" (selbst angelegte und importierte Schemata). Wird im Browser gemerkt.
 const KEY_ANSICHT='schematrainer:ansicht:v1';
-let filterGebiet='';
-try{const a=JSON.parse(localStorage.getItem(KEY_ANSICHT)||'{}'); if(typeof a.gebiet==='string') filterGebiet=a.gebiet;}catch(e){}
-function merkeAnsicht(){try{localStorage.setItem(KEY_ANSICHT,JSON.stringify({gebiet:filterGebiet}));}catch(e){}}
-// Rechtsgebiete in Reihenfolge des ersten Auftretens; Filter nur sinnvoll, wenn es mindestens zwei gibt
-function gebiete(){const out=[];SCHEMAS.forEach(s=>{if(s.gebiet&&!out.includes(s.gebiet))out.push(s.gebiet);});return out;}
-// Schemata, die zur gewählten Ansicht gehören. Schemata ohne Rechtsgebiet erscheinen immer.
+const BEREICHE=['Strafrecht','Öffentliches Recht','Zivilrecht'];
+let ansicht={tab:'fertig', bereich:BEREICHE[0]};
+try{const a=JSON.parse(localStorage.getItem(KEY_ANSICHT)||'{}'); if(a.tab==='eigene') ansicht.tab='eigene'; if(typeof a.bereich==='string'&&a.bereich) ansicht.bereich=a.bereich;}catch(e){}
+function merkeAnsicht(){try{localStorage.setItem(KEY_ANSICHT,JSON.stringify(ansicht));}catch(e){}}
+function waehleTab(t){ansicht.tab=t==='eigene'?'eigene':'fertig'; merkeAnsicht();}
+// Fertige Schemata: die mitgelieferten; eine eigene Fassung mit derselben id steht an der Stelle des Originals.
+// Eigene Schemata: alles, was in der App angelegt oder importiert wurde (auch eigene Fassungen).
+function fertige(){return SCHEMAS.filter(s=>!s.eigen||s.ersetzt);}
+function eigene(){return SCHEMAS.filter(s=>s.eigen);}
+// Bereiche der fertigen Schemata: die drei festen Reiter zuerst, dann weitere Werte aus den Dateien; '' = ohne Bereich
+function bereiche(){
+  const out=BEREICHE.slice();
+  fertige().forEach(s=>{const b=s.bereich||''; if(!out.includes(b)) out.push(b);});
+  return out;
+}
+function aktiverTab(){return window.NUR_EIGENE?'eigene':ansicht.tab;}
+function aktiverBereich(){const b=bereiche(); return b.includes(ansicht.bereich)?ansicht.bereich:b[0];}
+// Schemata der gerade gewählten Ansicht; Fälligkeitszahl und "Wiederholen" beziehen sich darauf
 function sichtbar(){
-  const g=gebiete();
-  if(!filterGebiet||g.length<2||!g.includes(filterGebiet)) return SCHEMAS;
-  return SCHEMAS.filter(s=>!s.gebiet||s.gebiet===filterGebiet);
+  if(aktiverTab()==='eigene') return eigene();
+  const b=aktiverBereich();
+  return fertige().filter(s=>(s.bereich||'')===b);
 }
 
 /* ---------- Helfer ---------- */
@@ -120,40 +133,50 @@ function gruppiert(liste){
     nachName.get(n).schemas.push(s);
   });
   const ohne=nachName.get('');
-  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.name='Weitere Schemata';out.push(ohne);}
   return out;
 }
-// Abschnitte der Startseite: je Rechtsgebiet (Feld "gebiet") ein Abschnitt mit seinen Gruppen; ohne Rechtsgebiet zuletzt.
-// Zwischenüberschriften für Rechtsgebiete gibt es nur, wenn mehr als eines sichtbar ist.
-function abschnitte(){
-  const liste=sichtbar(), out=[], nachGebiet=new Map();
+// Abschnitte einer Liste: je Rechtsgebiet (Feld "gebiet") ein Abschnitt mit seinen Gruppen; ohne Rechtsgebiet zuletzt.
+// immerUeberschrift: Zwischenüberschrift auch bei nur einem Rechtsgebiet (Reiter der fertigen Schemata)
+function abschnitte(liste, immerUeberschrift){
+  const out=[], nachGebiet=new Map();
   liste.forEach(s=>{
     const g=s.gebiet||'';
     if(!nachGebiet.has(g)){const a={gebiet:g,schemas:[]};nachGebiet.set(g,a);out.push(a);}
     nachGebiet.get(g).schemas.push(s);
   });
   const ohne=nachGebiet.get('');
-  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.gebiet=ohne.schemas.every(s=>s.eigen)?'Eigene Schemata':'Weitere Schemata';out.push(ohne);}
-  const mitUeberschrift=out.length>1;
+  if(ohne&&out.length>1){out.splice(out.indexOf(ohne),1);ohne.gebiet='Weitere Schemata';out.push(ohne);}
+  const mitUeberschrift=out.length>1||(immerUeberschrift&&out.length===1&&!!out[0].gebiet);
   return out.map(a=>({gebiet:mitUeberschrift?a.gebiet:'',gruppen:gruppiert(a.schemas)}));
 }
-function filterHtml(){
-  const g=gebiete(); if(g.length<2) return '';
-  const aktiv=g.includes(filterGebiet)?filterGebiet:'';
-  const chip=(wert,text)=>`<button class="chipf${wert===aktiv?' aktiv':''}" data-act="gebiet" data-g="${esc(wert)}" aria-pressed="${wert===aktiv}">${esc(text)}</button>`;
-  return `<nav class="filter" aria-label="Rechtsgebiet">${chip('','Alle Gebiete')}${g.map(x=>chip(x,x)).join('')}</nav>`;
+function abschnitteHtml(liste, immerUeberschrift){
+  return abschnitte(liste, immerUeberschrift).map(a=>`${a.gebiet?`<h2 class="gebiet">${esc(a.gebiet)}</h2>`:''}${a.gruppen.map(g=>`${g.name?`<${a.gebiet?'h3':'h2'} class="gruppe">${esc(g.name)}</${a.gebiet?'h3':'h2'}>`:''}${g.schemas.map(karte).join('')}`).join('')}`).join('');
+}
+// Reiterleiste: oben "Fertige Schemata" / "Eigene Schemata", darunter die Bereiche der fertigen Schemata
+function reiter(liste, aktiv, act, klasse, label){
+  return `<nav class="tabs ${klasse}" role="tablist" aria-label="${label}">${liste.map(([wert,text])=>`<button class="tab${wert===aktiv?' aktiv':''}" role="tab" aria-selected="${wert===aktiv}" data-act="${act}" data-w="${esc(wert)}">${esc(text)}</button>`).join('')}</nav>`;
+}
+function dueHtml(){
+  const due=dueCount();
+  return `<section class="due">
+    <div><strong>${due}</strong>${due===1?'Definition':'Definitionen'} fällig oder neu</div>
+    <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
+  </section>`;
 }
 function karte(s){
-  const sc=store.scores[s.id], defs=s.steps.filter(x=>x.d).length;
+  const sc=store.scores[s.id], lz=store.lueckentext[s.id], vs=store.verschieben[s.id], defs=s.steps.filter(x=>x.d).length;
   const z=Eigene.karteZusatz(s); // Kennzeichnung und Bearbeiten-Knopf für eigene Schemata
   return `<article class="schema${s.eigen?' eigen':''}">
       <div class="norm">${esc(s.norm)}${z.tag}</div>
       <h3>${esc(s.title)}</h3>
-      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}.${z.hinweis}</div>
+      <div class="meta">${s.steps.length} Prüfungspunkte, ${defs} ${defs===1?'Definition':'Definitionen'}${sc?`. Zuletzt im Aufbau ${sc.known} von ${sc.total} gewusst`:''}${lz?`. Zuletzt im Lückentext ${lz.richtig} von ${lz.total} Lücken`:''}${vs?`. Zuletzt beim Verschieben ${vs.richtig} von ${vs.total} richtig`:''}.${z.hinweis}</div>
       <div class="actions">
         <button class="btn primary" data-act="build" data-id="${s.id}">Aufbau abfragen</button>
         <button class="btn" data-act="order" data-id="${s.id}">Ordnen</button>
         <button class="btn" data-act="cards" data-id="${s.id}"${defs?'':' disabled'}>Definitionen</button>
+        <button class="btn" data-act="cloze" data-id="${s.id}"${defs?'':' disabled'}>Lückentext</button>
+        <button class="btn" data-act="move" data-id="${s.id}">Verschieben</button>
         <button class="btn" data-act="view" data-id="${s.id}">Ansehen</button>
         ${z.knopf}
       </div>
@@ -161,22 +184,24 @@ function karte(s){
 }
 function renderHome(){
   state=null; verlauf=[];
-  const due=dueCount();
-  if(!SCHEMAS.length){
-    // Leere Umgebung (eigene.html ohne eigene Schemata): Einstieg statt leerer Liste
-    app.innerHTML=(ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:'')+Eigene.leerHinweis();
-    return;
+  const hinweis=ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:'';
+  const tab=aktiverTab();
+  let inhalt='';
+  if(tab==='eigene'){
+    // Eigene Schemata: Werkzeuge (Neu, Importieren, Exportieren) und die Liste; ohne eigene Schemata der Einstieg
+    const liste=eigene();
+    inhalt=liste.length?dueHtml()+Eigene.werkzeuge()+abschnitteHtml(liste,false):Eigene.leerHinweis();
+  }else{
+    // Fertige Schemata: Reiter je Bereich, darin Abschnitte je Rechtsgebiet und Gruppen
+    const b=aktiverBereich(), liste=sichtbar();
+    inhalt=reiter(bereiche().map(x=>[x,x||'Weitere Schemata']),b,'bereich','bereiche','Bereich')
+      +(liste.length?dueHtml()+abschnitteHtml(liste,true)
+        :`<section class="leer"><h2>${esc(b||'Weitere Schemata')}</h2><p>Hier sind noch keine fertigen Schemata enthalten. Du kannst eigene anlegen oder importierte verwenden; sie stehen unter „Eigene Schemata“.</p><div class="actions"><button class="btn primary" data-act="tab" data-w="eigene">Zu den eigenen Schemata</button></div></section>`);
   }
-  app.innerHTML=`
-  ${ladeHinweis?`<div class="hinweisbox" role="alert"><strong>Schema-Dateien unvollständig.</strong> ${esc(ladeHinweis)} <a href="pruefen.html">Einzelheiten zeigt die Prüfseite.</a></div>`:''}
-  <p class="intro">Prüfungsschemata Schritt für Schritt aufbauen, Prüfungspunkte ordnen und Definitionen aktiv abrufen. Dein Lernstand wird in diesem Browser gespeichert.</p>
-  <section class="due">
-    <div><strong>${due}</strong>${due===1?'Definition':'Definitionen'} fällig oder neu</div>
-    <button class="btn primary" data-act="review"${due?'':' disabled'}>Wiederholen</button>
-  </section>
-  ${Eigene.werkzeuge()}
-  ${filterHtml()}
-  ${abschnitte().map(a=>`${a.gebiet?`<h2 class="gebiet">${esc(a.gebiet)}</h2>`:''}${a.gruppen.map(g=>`${g.name?`<${a.gebiet?'h3':'h2'} class="gruppe">${esc(g.name)}</${a.gebiet?'h3':'h2'}>`:''}${g.schemas.map(karte).join('')}`).join('')}`).join('')}`;
+  app.innerHTML=hinweis
+    +`<p class="intro">Prüfungsschemata Schritt für Schritt aufbauen, Prüfungspunkte ordnen und Definitionen aktiv abrufen. Dein Lernstand wird in diesem Browser gespeichert.</p>`
+    +(window.NUR_EIGENE?'':reiter([['fertig','Fertige Schemata'],['eigene','Eigene Schemata']],tab,'tab','haupt','Schemata'))
+    +inhalt;
 }
 
 /* ---------- Ansehen ---------- */
@@ -270,9 +295,180 @@ function rateCard(v){
   renderCards();
 }
 
+/* ---------- Lückentext ---------- */
+// Schlüsselwörter einer Definition werden zu Lücken; die fehlenden Wörter stehen gemischt darunter
+// und werden der Reihe nach angetippt (falsches Wort = Fehlgriff, wie beim Ordnen).
+// Der Karteikasten (Stufen) bleibt unberührt; gespeichert wird nur das Ergebnis je Schema.
+// Funktionswörter mit mindestens fünf Buchstaben, die nie zur Lücke werden (kürzere fallen ohnehin heraus)
+const LZ_STOPP=new Set(('einer eines einem einen dieser dieses diesem diesen diese durch gegen nicht keine keiner keinem keinen sowie sondern zwischen wobei welche welcher welches welchem welchen sofern soweit dessen deren denen ihrer ihres ihrem ihren seiner seines seinem seinen unter werden worden haben hatte können müssen sollen dürfen seine bereits jedoch damit daher somit insbesondere gegenüber innerhalb außerhalb wegen trotz während hierbei dabei dagegen dafür hierzu allein bloße bloßer bloßen bloßes immer stets sowohl weder entweder andere anderen anderer anderes selbst ebenso insoweit zumindest gerade weniger wieder einschließlich aufgrund mittels anhand zudem ferner ebenfalls lediglich jeweils jeweilige jeweiligen hinaus darüber mehrere mehreren etwaige etwaigen solche solcher solches solchen diejenigen derjenige derjenigen denjenigen').split(' '));
+function lzKern(tok){return tok.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'');}
+// Lücken für eine Definition wählen. tokens enthält auch die Leerzeichen, damit der Text wieder zusammengesetzt werden kann.
+// Kandidaten: Wörter ab fünf Buchstaben außer Funktionswörtern; Großgeschriebenes (Substantive) wird bevorzugt.
+function lzLuecken(text){
+  const tokens=String(text).split(/(\s+)/), kand=[];
+  tokens.forEach((t,i)=>{
+    if(/^\s*$/.test(t)) return;
+    const k=lzKern(t);
+    if(k.length<5||!/\p{L}/u.test(k)||/^\p{N}/u.test(k)||LZ_STOPP.has(k.toLowerCase())) return;
+    kand.push({i, wort:k, gewicht:/^\p{Lu}/u.test(k)?2:1});
+  });
+  if(!kand.length) return {tokens, luecken:[]};
+  const n=Math.min(kand.length, Math.max(2, Math.round(kand.length*0.3)), 6);
+  const rest=kand.slice(), wahl=[];
+  while(wahl.length<n&&rest.length){
+    const summe=rest.reduce((a,k)=>a+k.gewicht,0); let r=Math.random()*summe, j=0;
+    while(j<rest.length-1&&(r-=rest[j].gewicht)>0) j++;
+    wahl.push(rest.splice(j,1)[0]);
+  }
+  wahl.sort((a,b)=>a.i-b.i);
+  return {tokens, luecken:wahl.map(k=>({i:k.i, wort:k.wort}))};
+}
+// Am PC (Maus) wird getippt, die Wortauswahl ist ausgeblendet; am Handy ist sie von Anfang an sichtbar
+const feinerZeiger=()=>!!(window.matchMedia&&window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+function lzNorm(w){return String(w).toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'');}
+// Tippfehler-Toleranz: bei Wörtern ab acht Buchstaben darf ein Buchstabe abweichen
+function lzAbstand(a,b){
+  if(Math.abs(a.length-b.length)>1) return 2;
+  let v=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){const n=[i];for(let j=1;j<=b.length;j++)n[j]=Math.min(v[j]+1,n[j-1]+1,v[j-1]+(a[i-1]===b[j-1]?0:1));v=n;}
+  return v[b.length];
+}
+function lzPasst(eingabe,wort){const e=lzNorm(eingabe), w=lzNorm(wort); return e===w||(w.length>=8&&lzAbstand(e,w)<=1);}
+function startCloze(s){
+  const queue=allCards(s).map(c=>Object.assign({c},lzLuecken(c.st.d.text))).filter(x=>x.luecken.length);
+  if(!queue.length){renderHome();return;}
+  const tippen=feinerZeiger();
+  state={kind:'cloze',s,queue,pos:0,gefuellt:0,pool:[],fehler:0,richtig:0,total:0,aufgedeckt:false,aufgedecktAb:0,tippen,woerter:!tippen};
+  lzNeueKarte(); renderCloze();
+}
+// Getipptes Wort prüfen (Enter im Eingabefeld)
+function lzPruefeEingabe(){
+  const st=state, k=st.queue[st.pos], inp=app.querySelector('.luecke-eingabe'); if(!inp||st.gefuellt>=k.luecken.length) return;
+  if(!inp.value.trim()) return;
+  if(lzPasst(inp.value,k.luecken[st.gefuellt].wort)){
+    const w=lzNorm(k.luecken[st.gefuellt].wort), j=st.pool.find(x=>lzNorm(k.luecken[x].wort)===w);
+    st.pool=st.pool.filter(x=>x!==j); st.richtig++; st.gefuellt++; st.tippen=true; renderCloze();
+  } else { st.fehler++; inp.classList.remove('wrong'); void inp.offsetWidth; inp.classList.add('wrong'); inp.select(); }
+}
+function lzNeueKarte(){
+  const st=state, k=st.queue[st.pos];
+  st.gefuellt=0; st.aufgedeckt=false; st.aufgedecktAb=0; st.pool=shuffle(k.luecken.map((l,j)=>j)); st.total+=k.luecken.length;
+}
+function renderCloze(){
+  const st=state, s=st.s, n=st.queue.length;
+  if(st.pos>=n){
+    store.lueckentext[s.id]={richtig:st.richtig,total:st.total,at:Date.now()}; save();
+    app.innerHTML=topbar(s)+`<div class="result"><p class="score">${st.richtig} von ${st.total}</p><p>Lücken richtig gefüllt${st.fehler?`, ${st.fehler} ${st.fehler===1?'Fehlgriff':'Fehlgriffe'}`:''}.</p></div>
+      <div class="actions"><button class="btn primary" data-act="cloze" data-id="${s.id}">Noch einmal</button><button class="btn" data-act="cards" data-id="${s.id}">Definitionen üben</button><button class="btn" data-act="home">Zur Übersicht</button></div>`;
+    return;
+  }
+  const k=st.queue[st.pos], ks=k.c.s, step=k.c.st, fertig=st.gefuellt>=k.luecken.length;
+  const text=k.tokens.map((t,i)=>{
+    const j=k.luecken.findIndex(l=>l.i===i);
+    if(j<0) return esc(t);
+    const l=k.luecken[j], a=t.indexOf(l.wort), vor=t.slice(0,a), nach=t.slice(a+l.wort.length);
+    const lage=j<st.gefuellt?((st.aufgedeckt&&j>=st.aufgedecktAb)?' aufgedeckt':' gefuellt'):(j===st.gefuellt?' aktiv':'');
+    const inhalt=j<st.gefuellt?esc(l.wort):(j===st.gefuellt
+      ?`<input class="luecke-eingabe" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Lücke ${j+1}" enterkeyhint="done">`
+      :`<span class="nr">${j+1}</span>`);
+    return esc(vor)+`<span class="luecke${lage}" style="--n:${l.wort.length}">${inhalt}</span>`+esc(nach);
+  }).join('');
+  app.innerHTML=topbar(s)+progress(st.pos,n)+`<article class="card">
+    <div class="ctx">${esc(ks.norm)}, ${esc(step.path)}</div>
+    <h2 class="prompt">${esc(step.d.term)}</h2>
+    <p class="lueckentext">${text}</p>
+    ${fertig?`<div class="src">${esc(step.d.src)}</div>`:''}
+  </article>
+  ${fertig?`<div class="controls"><button class="btn primary" data-act="lz-weiter">${st.pos+1<n?'Nächste Definition':'Auswerten'}</button></div><p class="hint">Leertaste geht weiter</p>`
+  :`<p class="sub">${st.woerter?'Tippe das Wort an, das in die markierte Lücke gehört, oder schreibe es hinein (Enter prüft).':'Schreibe das fehlende Wort in die markierte Lücke und drücke Enter.'}</p>
+  ${st.woerter?`<div class="chips woerter">${st.pool.map(j=>`<button class="chip wort" data-act="lz-chip" data-j="${j}">${esc(k.luecken[j].wort)}</button>`).join('')}</div>`:''}
+  <p class="loesung"><button class="linkbtn" data-act="lz-woerter">${st.woerter?'Wörter verbergen':'Wörter anzeigen'}</button> <span class="sep">·</span> <button class="linkbtn" data-act="lz-loesung">Lösung zeigen</button></p>`}`;
+  if(!fertig&&st.tippen){const inp=app.querySelector('.luecke-eingabe'); if(inp) inp.focus({preventScroll:true});}
+}
+
+/* ---------- Verschieben ---------- */
+// Das Schema erscheint leer (Nummern und Einrückungen bleiben stehen), die Prüfungspunkte liegen gemischt im Vorrat.
+// Ablegen durch Ziehen (Maus sofort, Finger nach kurzem Halten) oder durch Antippen: erst den Punkt, dann die Stelle.
+function startMove(s){
+  state={kind:'move',s,slots:s.steps.map(()=>null),pool:shuffle(s.steps.map((st,i)=>i)),gewaehlt:null,fertig:false};
+  renderMove();
+}
+// Punkt i in Stelle ziel legen; liegt dort schon ein Punkt, wandert er dorthin, wo i herkam (Vorrat oder Stelle)
+function vAblegen(i,ziel){
+  const st=state, alt=st.slots[ziel], von=st.slots.indexOf(i);
+  if(von>=0) st.slots[von]=null; else st.pool=st.pool.filter(x=>x!==i);
+  if(alt!==null&&alt!==i){ if(von>=0) st.slots[von]=alt; else st.pool.unshift(alt); }
+  st.slots[ziel]=i; st.gewaehlt=null;
+}
+function vZurueck(i){ const st=state, von=st.slots.indexOf(i); if(von>=0){ st.slots[von]=null; if(!st.pool.includes(i)) st.pool.unshift(i); } }
+function renderMove(){
+  const {s,slots,pool,gewaehlt,fertig}=state, n=s.steps.length;
+  const richtig=slots.filter((x,i)=>x===i).length;
+  if(fertig){ store.verschieben[s.id]={richtig,total:n,at:Date.now()}; save(); }
+  app.innerHTML=topbar(s)
+  +(fertig?`<div class="result"><p class="score">${richtig} von ${n}</p><p>Prüfungspunkten an der richtigen Stelle.</p></div>`
+    :`<p class="task">Setze die Prüfungspunkte an die richtige Stelle.</p><p class="sub">Ziehen (am Handy kurz halten) oder antippen: erst den Punkt, dann die Stelle. Ein abgelegter Punkt kehrt durch Antippen in den Vorrat zurück.</p>`)
+  +`<ol class="outline verschieben">${s.steps.map((st,i)=>{
+    const x=slots[i], leer=x===null, ok=fertig&&x===i;
+    const klasse='step vslot'+(leer?' offen':'')+(fertig?(ok?' ok':' bad'):'')+(!fertig&&gewaehlt!==null&&leer?' bereit':'');
+    const inhalt=fertig
+      ?(leer?`<span class="placeholder">${esc(st.t)}</span>`:`${esc(s.steps[x].t)}${ok?'':`<div class="richtig">Richtig: ${esc(st.t)}</div>`}`)
+      :(leer?`<span class="placeholder">${gewaehlt!==null?'Hier ablegen':'…'}</span>`:`<button class="vitem${gewaehlt===x?' gewaehlt':''}" data-act="v-abgelegt" data-vitem="${x}" data-von="slot">${esc(s.steps[x].t)}</button>`);
+    return `<li class="${klasse}" data-l="${st.l}" data-vslot="${i}" style="--lvl:${st.l}"${fertig?'':' data-act="v-slot"'}><span class="num">${esc(st.num)}</span><div class="txt">${inhalt}</div>${fertig?`<span class="mark" aria-label="${ok?'richtig':'falsch'}">${ok?'✓':'✗'}</span>`:''}</li>`;
+  }).join('')}</ol>`
+  +(fertig?`<div class="actions"><button class="btn primary" data-act="move" data-id="${s.id}">Noch einmal</button><button class="btn" data-act="build" data-id="${s.id}">Aufbau abfragen</button><button class="btn" data-act="home">Zur Übersicht</button></div>`
+    :`<h3>Vorrat${pool.length?` (${pool.length})`:''}</h3><div class="chips vorrat">${pool.map(i=>`<button class="chip vitem${gewaehlt===i?' gewaehlt':''}" data-act="v-chip" data-vitem="${i}" data-von="pool">${esc(s.steps[i].t)}</button>`).join('')}${pool.length?'':'<p class="sub">Alle Punkte sind abgelegt.</p>'}</div>
+  <div class="controls"><button class="btn primary" data-act="v-auswerten"${pool.length?' disabled':''}>Auswerten</button></div>${pool.length?'<p class="hint">Auswerten geht, sobald alle Punkte abgelegt sind</p>':''}`);
+}
+// Ziehen mit Zeigerereignissen (Maus und Finger). Nach dem Loslassen wird der folgende Klick unterdrückt.
+let zieh=null, klickSperre=false;
+function vSlotUnter(x,y){ const el=document.elementFromPoint(x,y); return el?el.closest('[data-vslot]'):null; }
+function vZiehEnde(){
+  const z=zieh; zieh=null; if(!z) return null;
+  clearTimeout(z.timer); if(z.ghost) z.ghost.remove(); z.el.classList.remove('wird-gezogen');
+  document.querySelectorAll('.vslot.ziel').forEach(el=>el.classList.remove('ziel'));
+  return z;
+}
+document.addEventListener('pointerdown',e=>{
+  if(!state||state.kind!=='move'||state.fertig) return;
+  const el=e.target.closest('[data-vitem]'); if(!el||(e.pointerType==='mouse'&&e.button!==0)) return;
+  zieh={el,i:+el.dataset.vitem,x:e.clientX,y:e.clientY,id:e.pointerId,aktiv:false,bereit:e.pointerType==='mouse',timer:0};
+  // Finger: erst nach kurzem Halten ziehen, damit die Seite weiter scrollbar bleibt
+  if(!zieh.bereit) zieh.timer=setTimeout(()=>{ if(zieh&&!zieh.aktiv){ zieh.bereit=true; el.classList.add('wird-gezogen'); } },250);
+});
+document.addEventListener('pointermove',e=>{
+  if(!zieh||e.pointerId!==zieh.id) return;
+  const d=Math.hypot(e.clientX-zieh.x,e.clientY-zieh.y);
+  if(!zieh.aktiv){
+    if(!zieh.bereit){ if(d>8){ clearTimeout(zieh.timer); zieh=null; } return; }
+    if(d<4) return;
+    zieh.aktiv=true; zieh.ghost=zieh.el.cloneNode(true); zieh.ghost.className='vghost'; document.body.appendChild(zieh.ghost); zieh.el.classList.add('wird-gezogen');
+    try{ zieh.el.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  e.preventDefault();
+  // Nahe am oberen oder unteren Rand die Seite mitscrollen, aber nur, solange der Zeiger weiter auf den Rand zugeht
+  const rand=70, vorher=zieh.letztesY===undefined?e.clientY:zieh.letztesY; zieh.letztesY=e.clientY;
+  if(e.clientY<rand&&e.clientY<=vorher) window.scrollBy(0,-16); else if(e.clientY>window.innerHeight-rand&&e.clientY>=vorher) window.scrollBy(0,16);
+  zieh.ghost.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  document.querySelectorAll('.vslot.ziel').forEach(el=>el.classList.remove('ziel'));
+  const slot=vSlotUnter(e.clientX,e.clientY); if(slot) slot.classList.add('ziel');
+},{passive:false});
+document.addEventListener('pointerup',e=>{
+  if(!zieh||e.pointerId!==zieh.id) return;
+  const z=vZiehEnde();
+  if(!z.aktiv) return; // kurzes Antippen: übernimmt der Klick-Handler
+  klickSperre=true; setTimeout(()=>{klickSperre=false;},0);
+  const slot=vSlotUnter(e.clientX,e.clientY);
+  if(slot) vAblegen(z.i,+slot.dataset.vslot); else if(z.el.dataset.von==='slot') vZurueck(z.i);
+  state.gewaehlt=null; renderMove();
+});
+document.addEventListener('pointercancel',()=>{ vZiehEnde(); });
+document.addEventListener('touchmove',e=>{ if(zieh&&(zieh.aktiv||zieh.bereit)) e.preventDefault(); },{passive:false});
+
 /* ---------- Ereignisse ---------- */
 const byId=id=>SCHEMAS.find(x=>x.id===id);
 document.addEventListener('click',e=>{
+  if(klickSperre){ klickSperre=false; return; } // Klick direkt nach dem Ziehen
   const b=e.target.closest('[data-act]'); if(!b) return;
   const act=b.dataset.act, s=byId(b.dataset.id);
   switch(act){
@@ -312,11 +508,33 @@ document.addEventListener('click',e=>{
       const list=faelligeKarten().sort((a,b2)=>card(a.cid).box-card(b2.cid).box).slice(0,20);
       startCards(list); window.scrollTo(0,0); break;
     }
-    case 'gebiet': filterGebiet=b.dataset.g||''; merkeAnsicht(); renderHome(); break;
+    case 'cloze': startCloze(s); window.scrollTo(0,0); break;
+    case 'move': startMove(s); window.scrollTo(0,0); break;
+    case 'v-chip': { const i=+b.dataset.vitem; state.gewaehlt=state.gewaehlt===i?null:i; renderMove(); break; }
+    case 'v-abgelegt': {
+      const i=+b.dataset.vitem;
+      if(state.gewaehlt!==null&&state.gewaehlt!==i) vAblegen(state.gewaehlt,+b.closest('[data-vslot]').dataset.vslot);
+      else { vZurueck(i); state.gewaehlt=i; }
+      renderMove(); break;
+    }
+    case 'v-slot': { if(state.gewaehlt===null) break; vAblegen(state.gewaehlt,+b.dataset.vslot); renderMove(); break; }
+    case 'v-auswerten': state.fertig=true; state.gewaehlt=null; renderMove(); window.scrollTo(0,0); break;
+    case 'lz-chip': {
+      const st=state, k=st.queue[st.pos], j=+b.dataset.j;
+      if(st.gefuellt>=k.luecken.length) break;
+      if(k.luecken[j].wort.toLowerCase()===k.luecken[st.gefuellt].wort.toLowerCase()){ st.richtig++; st.gefuellt++; st.pool=st.pool.filter(x=>x!==j); renderCloze(); }
+      else { st.fehler++; b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong'); }
+      break;
+    }
+    case 'lz-loesung': { const st=state, k=st.queue[st.pos]; st.aufgedecktAb=st.gefuellt; st.aufgedeckt=true; st.gefuellt=k.luecken.length; st.pool=[]; renderCloze(); break; }
+    case 'lz-woerter': state.woerter=!state.woerter; renderCloze(); break;
+    case 'lz-weiter': state.pos++; if(state.pos<state.queue.length) lzNeueKarte(); renderCloze(); window.scrollTo(0,0); break;
+    case 'tab': waehleTab(b.dataset.w); renderHome(); window.scrollTo(0,0); break;
+    case 'bereich': ansicht.bereich=b.dataset.w||''; ansicht.tab='fertig'; merkeAnsicht(); renderHome(); break;
     case 'flip': {const t=document.getElementById('mine'); state.mine=t?t.value.trim():''; state.revealed=true; renderCards(); break;}
     case 'rateCard': rateCard(+b.dataset.v); break;
     case 'reset':
-      if(b.dataset.armed){store={cards:{},scores:{}};save();delete b.dataset.armed;b.textContent='Lernstand zurücksetzen';renderHome();}
+      if(b.dataset.armed){store={cards:{},scores:{},lueckentext:{},verschieben:{}};save();delete b.dataset.armed;b.textContent='Lernstand zurücksetzen';renderHome();}
       else{b.dataset.armed='1';b.textContent='Zum Bestätigen erneut tippen';}
       break;
     default: Eigene.aktion(act,b); // Editor, Import, Export (js/eigene.js)
@@ -328,10 +546,12 @@ document.addEventListener('keydown',e=>{
   const t=e.target, inText=t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.tagName==='SELECT', onBtn=t.tagName==='BUTTON';
   const press=sel=>{const b=app.querySelector(sel); if(b){e.preventDefault(); b.click();}};
   if(state.kind==='cards'&&!state.revealed&&inText&&e.key==='Enter'&&(e.ctrlKey||e.metaKey)){press('[data-act="flip"]');return;}
+  if(state.kind==='cloze'&&t.classList&&t.classList.contains('luecke-eingabe')&&e.key==='Enter'){e.preventDefault(); lzPruefeEingabe(); return;}
   if(inText||e.ctrlKey||e.metaKey) return;
   if(e.key===' '&&!onBtn){
     if(state.kind==='build'&&!state.revealed) press('[data-act="reveal"]');
     else if(state.kind==='cards'&&!state.revealed) press('[data-act="flip"]');
+    else if(state.kind==='cloze') press('[data-act="lz-weiter"]');
     return;
   }
   if(state.kind==='build'&&state.revealed&&(e.key==='1'||e.key==='2')) press(`[data-act="rateStep"][data-v="${+e.key-1}"]`);

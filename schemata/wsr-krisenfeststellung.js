@@ -5,6 +5,7 @@ SCHEMATA.push({
   id: "wsr-krise",
   norm: "§§ 17–19 InsO",
   titel: "Krisenfeststellung im Gutachten",
+  bereich: "Strafrecht",
   gebiet: "Wirtschaftsstrafrecht",
   gruppe: "Insolvenz-, Korruptions- und Kapitalmarktstrafrecht (KE 3)",
   gliederung: ["1."],
